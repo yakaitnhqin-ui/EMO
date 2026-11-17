@@ -29,3 +29,18 @@ Downloads/**
 Documents/**
 Desktop/**
 3D Objects/**
+
+# Track core QC folders
+!/docs/**
+!/tickets/**
+!/scripts/**
+!/automation/**
+
+# ...but never these (secrets, generated output, deps)
+/scripts/jira_*.py
+/automation/node_modules/**
+/automation/reports/**
+/automation/test-results/**
+/automation/playwright-report/**
+/automation/tests/helpers/auth.js
+/scripts/docmost_client.py

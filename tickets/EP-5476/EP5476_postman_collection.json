@@ -1,0 +1,1617 @@
+{
+  "info": {
+    "name": "Group By View (Recurring Data Sale) - API Test Cases",
+    "_postman_id": "ep5476-group-by-view-recurring-data-sale",
+    "description": "Test cases cho endpoint POST /api/dashboard/group-by-view voi dataSource=recurring-data-sale (EP-5476). Da verify truc tiep tren STG ngay 2026-07-03 bang token that; cac case con <can confirm> la do thieu test fixture (expired/revoked/deleted-user token, tai khoan Partner de test role).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "EP5476_TC01 - Happy path - lấy dữ liệu Recurring Data Sale không group by, token hợp lệ",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC02 - Happy path - lấy dữ liệu Recurring Data Sale, group by Country",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [\n        \"Country\"\n      ],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC03 - Không gửi header Authorization",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC04 - Token sai cấu trúc (không đủ 3 phần JWT / chuỗi rác)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer invalidtoken"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC05 - Token sai chữ ký (signature bị sửa, không khớp)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.tamperedsignature"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC06 - Token payload không hợp lệ (thiếu claim exp)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenMissingExp}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// <cần confirm> - chưa có đủ dữ liệu/test fixture để assert chắc chắn cho case này.",
+              "// Ghi chú: <cần confirm> - dự đoán 401 cùng message chung \"Unauthorized access!...\" theo pattern đã verify, nhưng CHƯA tạo được token thật thiếu claim exp để test trực tiếp"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC07 - Token đã hết hạn (exp đã qua)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{expiredAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// <cần confirm> - chưa có đủ dữ liệu/test fixture để assert chắc chắn cho case này.",
+              "// Ghi chú: <cần confirm> - dự đoán 401 cùng message chung theo pattern đã verify, nhưng CHƯA có token hết hạn thật để test (không thể giả lập nhanh trong phiên này)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC08 - Sai loại token - dùng refresh token thay cho access token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{refreshToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC09 - Token hợp lệ nhưng user trong token đã bị xóa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{deletedUserToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// <cần confirm> - chưa có đủ dữ liệu/test fixture để assert chắc chắn cho case này.",
+              "// Ghi chú: <cần confirm> - không có sẵn tài khoản test đã bị xóa để lấy token, chưa thể verify trực tiếp"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC10 - Token đã bị thu hồi / tái sử dụng sau khi logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{revokedToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// <cần confirm> - chưa có đủ dữ liệu/test fixture để assert chắc chắn cho case này.",
+              "// Ghi chú: <cần confirm> - chưa thể verify trực tiếp trong phiên này (cần logout rồi tái sử dụng token cũ)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC11 - Bearer token để trống",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC12 - Sai scheme - header thiếu tiền tố Bearer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC13 - Token hợp lệ nhưng role không có quyền truy cập endpoint dashboard",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{lowPrivilegeToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// <cần confirm> - chưa có đủ dữ liệu/test fixture để assert chắc chắn cho case này.",
+              "// Ghi chú: <cần confirm> - không có sẵn tài khoản Partner/role thấp hơn để test trong phiên này; endpoint /api/dashboard/group-by-view dùng chung path cho cả Admin & Partner Portal theo WBS nên CÓ THỂ không phân quyền role riêng ở tầng này (permission có thể áp ở tầng data thay vì chặn 403)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC14 - Thiếu trường itemRequests (bắt buộc)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC15 - itemRequests là mảng rỗng",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC16 - Thiếu trường dataSource trong itemRequest",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC17 - dataSource không tồn tại / sai giá trị",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"invalid-data-source\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC18 - filters.country có giá trị hợp lệ (lọc theo quốc gia)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": [\n          \"Vietnam\"\n        ]\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC19 - filters.country sai kiểu dữ liệu (string đơn \"VN\" thay vì mảng)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": \"VN\"\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC20 - groupBys chứa giá trị không hợp lệ",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [\n        \"InvalidGroup\"\n      ],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC21 - groupBys theo dimension \"Data plan\" (dimension thứ 2 theo AC ticket EP-5476)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [\n        \"DataPlan\"\n      ],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC22 - pageIndex = 0",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 0,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC23 - pageIndex âm (-1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": -1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC24 - pageSize = 0",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 0\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC25 - pageSize rất lớn (1000) — kiểm tra có giới hạn tối đa (cap) hay không",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 1000\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC26 - Thiếu trường compareDateDimensions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC27 - compareDateDimensions là mảng rỗng",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": []\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC28 - startDate lớn hơn endDate (khoảng ngày không hợp lệ)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"2026-07-01\",\n      \"endDate\": \"1970-01-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC29 - startDate/endDate sai định dạng chuẩn (thử \"01-07-2026\" thay vì \"2026-07-01\")",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"01-07-2026\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// <cần confirm> - chưa có đủ dữ liệu/test fixture để assert chắc chắn cho case này.",
+              "// Ghi chú: <cần confirm ý nghĩa> - THỰC TẾ: 200 OK, backend PARSE ĐƯỢC chuỗi \"01-07-2026\" và trả giá trị khác 0, nhưng KHÔNG rõ backend hiểu đây là ngày nào (1/7/2026 hay 7/1/2026) — rủi ro sai lệch dữ liệu âm thầm nếu FE/BE không thống nhất format ngày."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC30 - Khoảng ngày sát ngày hiện tại - verify Recurring Data Sale (event-based) KHÔNG áp dụng rule N/A dành cho cohort-based metric",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"2026-07-02\",\n      \"endDate\": \"2026-07-03\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC31 - filters.dataPlan có giá trị hợp lệ (lọc theo gói data, dimension thứ 2 theo AC)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"dataPlan\": [\n          \"Global 30GB\"\n        ]\n      },\n      \"groupBys\": [],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "EP5476_TC32 - [DATA QUALITY] Kiểm tra không có groupByValue rỗng khi group by Country",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemRequests\": [\n    {\n      \"dataSource\": \"recurring-data-sale\",\n      \"filters\": {\n        \"country\": null\n      },\n      \"groupBys\": [\n        \"Country\"\n      ],\n      \"pageIndex\": 1,\n      \"pageSize\": 10\n    }\n  ],\n  \"compareDateDimensions\": [\n    {\n      \"startDate\": \"1970-01-01\",\n      \"endDate\": \"2026-07-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/group-by-view",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "group-by-view"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Không có groupByValue rỗng (data quality check)\", function () {",
+              "    const json = pm.response.json();",
+              "    const rows = (json.data && json.data[0] && json.data[0].data) || [];",
+              "    const blanks = rows.filter(r => !r.groupByValue);",
+              "    pm.expect(blanks.length, \"Số dòng có groupByValue rỗng\").to.eql(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://app-eskimo-api-stage-sea-001.azurewebsites.net/api",
+      "description": "Base URL API tren STG (xac nhan qua Playwright network capture 2026-07-03)"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "Access token JWT hop le"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "description": "Refresh token hop le - CANH BAO: da verify token nay hien dang duoc CHAP NHAN nhu access token boi endpoint nay (xem TC08)"
+    },
+    {
+      "key": "expiredAccessToken",
+      "value": "",
+      "description": "Chua verify - can token het han that de test"
+    },
+    {
+      "key": "tokenMissingExp",
+      "value": "",
+      "description": "Chua verify - can token thieu claim exp de test"
+    },
+    {
+      "key": "deletedUserToken",
+      "value": "",
+      "description": "Chua verify - can tai khoan da bi xoa de test"
+    },
+    {
+      "key": "revokedToken",
+      "value": "",
+      "description": "Chua verify - can kich ban logout/revoke that de test"
+    },
+    {
+      "key": "lowPrivilegeToken",
+      "value": "",
+      "description": "Chua verify - can tai khoan Partner/role thap hon de test 403"
+    }
+  ]
+}

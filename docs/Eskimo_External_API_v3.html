@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eskimo External Partner API — Technical Documentation v3.1</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:      #0C1B2E;
+  --blue:      #1168A8;
+  --blue-mid:  #1A7FC4;
+  --teal:      #1DB8A6;
+  --ground:    #F4F8FC;
+  --surface:   #FFFFFF;
+  --stripe:    #EBF4FB;
+  --border:    #D3E5F2;
+  --muted:     #6B8499;
+  --code-bg:   #0F1E33;
+  --code-fg:   #B8D4EA;
+  --code-key:  #5FC9D8;
+  --code-str:  #7EC891;
+  --code-num:  #F0A868;
+  --get:       #1DA462;
+  --post:      #1168A8;
+  --put:       #D07B12;
+  --delete:    #C0393B;
+  --radius:    4px;
+  --mono:      'Consolas', 'Menlo', 'Courier New', monospace;
+  --sans:      -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+html { font-size: 15px; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ground);
+  color: var(--navy);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* ── COVER ─────────────────────────────────────────────── */
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 72px 0 56px;
+  page-break-after: always;
+}
+.cover-top { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 40px; height: 40px;
+  background: var(--blue);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.brand-mark svg { width: 22px; height: 22px; fill: white; }
+.brand-name { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.05em; color: var(--blue); text-transform: uppercase; }
+
+.cover-main { margin-top: 96px; }
+.cover-eyebrow {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 16px;
+}
+.cover-title {
+  font-size: 3.2rem; font-weight: 800; line-height: 1.1;
+  color: var(--navy); text-wrap: balance; margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+.cover-subtitle {
+  font-size: 1.1rem; color: var(--muted); max-width: 520px; line-height: 1.6;
+}
+.cover-divider {
+  width: 48px; height: 3px; background: var(--teal);
+  margin: 36px 0;
+}
+.cover-meta {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; max-width: 500px;
+}
+.meta-item { display: flex; flex-direction: column; gap: 4px; }
+.meta-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.meta-value { font-size: 0.9rem; font-weight: 600; color: var(--navy); }
+
+.cover-footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-top: 1px solid var(--border); padding-top: 24px;
+  font-size: 0.75rem; color: var(--muted);
+}
+.confidential {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #FEF3E8; border: 1px solid #F5C892;
+  color: #A05E10; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: var(--radius);
+}
+
+/* ── TOC ─────────────────────────────────────────────────── */
+.toc-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 40px 48px;
+  margin: 48px 0 56px;
+  page-break-after: always;
+}
+.toc-heading {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 28px;
+}
+.toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.toc-group { padding: 0 16px 24px 0; }
+.toc-group-title {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 10px;
+}
+.toc-entry {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 4px 0; font-size: 0.85rem; color: var(--navy); text-decoration: none;
+}
+.toc-entry:hover { color: var(--blue); }
+.toc-num { font-variant-numeric: tabular-nums; color: var(--teal); font-weight: 700; font-size: 0.8rem; min-width: 24px; }
+
+/* ── SECTIONS ──────────────────────────────────────────── */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 40px 48px;
+  margin-bottom: 28px;
+  page-break-inside: avoid;
+}
+.section-lg { page-break-inside: auto; }
+.section-num {
+  display: inline-block;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: 8px;
+}
+.section-title {
+  font-size: 1.45rem; font-weight: 700; color: var(--navy);
+  margin-bottom: 20px; letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.section-title::after {
+  content: ''; display: block; width: 32px; height: 3px;
+  background: var(--teal); margin-top: 10px;
+}
+.subsection { margin-top: 36px; }
+.subsection:first-of-type { margin-top: 0; }
+.subsection-title {
+  font-size: 1.05rem; font-weight: 700; color: var(--navy);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+}
+.sub-anchor { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* ── ENDPOINT PILL ──────────────────────────────────────── */
+.endpoint {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 0.88rem;
+  border: 1px solid var(--border);
+  background: var(--ground);
+  padding: 10px 16px; border-radius: var(--radius);
+  margin-bottom: 16px; overflow-x: auto; max-width: 100%;
+  white-space: nowrap;
+}
+.method {
+  font-family: var(--sans); font-size: 0.65rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 3px; flex-shrink: 0;
+}
+.method.GET    { background: #D4F0E2; color: #0F6B38; }
+.method.POST   { background: #D6E8F8; color: #0C4D82; }
+.method.PUT    { background: #FDE9C8; color: #7A4A09; }
+.method.DELETE { background: #FAD8D8; color: #7C1C1C; }
+.method-note { font-size: 0.78rem; color: var(--muted); font-family: var(--sans); flex-shrink: 0; }
+
+.req-badge {
+  font-size: 0.7rem; font-family: var(--sans);
+  font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px; vertical-align: middle;
+}
+.req-badge.required { background: #D6E8F8; color: #0C4D82; }
+.req-badge.optional { background: #EAEEF2; color: #5A6B7B; }
+
+/* ── TABLES ────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.84rem; font-variant-numeric: tabular-nums;
+}
+th {
+  background: var(--navy); color: white;
+  text-align: left; padding: 9px 14px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; white-space: nowrap;
+}
+th:first-child { border-radius: 4px 0 0 0; }
+th:last-child  { border-radius: 0 4px 0 0; }
+td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:nth-child(even) td { background: var(--stripe); }
+tr:last-child td { border-bottom: none; }
+td code { font-family: var(--mono); font-size: 0.82em; background: #EBF0F5; padding: 1px 5px; border-radius: 3px; }
+
+/* ── CODE BLOCKS ────────────────────────────────────────── */
+pre {
+  background: var(--code-bg); color: var(--code-fg);
+  border-radius: 6px; padding: 20px 24px;
+  font-family: var(--mono); font-size: 0.82rem; line-height: 1.6;
+  overflow-x: auto; margin: 12px 0;
+  tab-size: 2;
+}
+.code-label {
+  display: inline-block;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 4px;
+}
+.k  { color: var(--code-key); }
+.s  { color: var(--code-str); }
+.n  { color: var(--code-num); }
+.cm { color: #607B8E; font-style: italic; }
+
+/* ── CALLOUTS ───────────────────────────────────────────── */
+.callout {
+  display: flex; gap: 12px;
+  padding: 14px 18px; border-radius: var(--radius);
+  font-size: 0.85rem; line-height: 1.55; margin: 16px 0;
+}
+.callout.info  { background: #EDF5FB; border-left: 3px solid var(--blue-mid); }
+.callout.warn  { background: #FEF5E7; border-left: 3px solid #E8A735; }
+.callout.tip   { background: #E8F7F5; border-left: 3px solid var(--teal); }
+.callout-icon  { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.callout strong { color: var(--navy); }
+
+/* ── FLOW DIAGRAM ───────────────────────────────────────── */
+.flow {
+  background: var(--ground); border: 1px solid var(--border);
+  border-radius: 6px; padding: 24px 28px;
+  font-family: var(--mono); font-size: 0.8rem; line-height: 1.8;
+  margin: 16px 0; overflow-x: auto; white-space: pre;
+}
+
+/* ── ERROR TABLE BADGE ──────────────────────────────────── */
+.http-badge {
+  display: inline-block;
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 3px;
+}
+.http-200 { background: #EDF5FB; color: #1168A8; }
+.http-4xx { background: #FAD8D8; color: #7C1C1C; }
+.http-429 { background: #FDE9C8; color: #7A4A09; }
+
+/* ── MISC ───────────────────────────────────────────────── */
+p { margin-bottom: 12px; font-size: 0.9rem; }
+p:last-child { margin-bottom: 0; }
+.text-muted { color: var(--muted); font-size: 0.85rem; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } .toc-grid { grid-template-columns: 1fr; } }
+
+/* ── PRINT ──────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 18mm 20mm; margin-top: 10mm; }
+  @page :first { margin-top: 0; }
+  body  { background: white; font-size: 12px; }
+  .page-wrap { padding: 0; max-width: 100%; }
+  .cover { min-height: 100vh; padding: 48px 0 40px; }
+  .cover-title { font-size: 2.4rem; }
+  .section { box-shadow: none; border: 1px solid #D0DDE8; padding: 28px 32px; margin-bottom: 16px; }
+  pre { font-size: 0.74rem; }
+  table { font-size: 0.78rem; }
+  a { color: var(--navy); text-decoration: none; }
+  .no-break { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- ═══════════════════ COVER ═══════════════════ -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 2a8 8 0 100 16A8 8 0 0012 4zm-1 3h2v6h-2V7zm0 8h2v2h-2v-2z"/>
+      </svg>
+    </div>
+    <span class="brand-name">Eskimo Portals</span>
+  </div>
+
+  <div class="cover-main">
+    <div class="cover-eyebrow">External Partner API</div>
+    <h1 class="cover-title">Technical Documentation</h1>
+    <p class="cover-subtitle">RESTful API reference for Merchant Reseller and White-Label partners — eSIM provisioning, account management, data plans, and usage monitoring.</p>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div class="meta-item">
+        <span class="meta-label">Version</span>
+        <span class="meta-value">3.1</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Updated</span>
+        <span class="meta-value">2026-08-26</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Audience</span>
+        <span class="meta-value">Partner Technical Team</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <span>Eskimo Portals &nbsp;·&nbsp; eskimo.travel</span>
+    <span class="confidential">&#9632; Confidential — Partner Use Only</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOC ═══════════════════ -->
+<div class="toc-section">
+  <div class="toc-heading">Table of Contents</div>
+  <div class="toc-grid">
+    <div class="toc-group">
+      <div class="toc-group-title">Foundation</div>
+      <a class="toc-entry" href="#s0"><span class="toc-num">0</span> Partnership Models</a>
+      <a class="toc-entry" href="#s1"><span class="toc-num">1</span> Getting Started</a>
+      <a class="toc-entry" href="#s2"><span class="toc-num">2</span> Integration Flow</a>
+      <a class="toc-entry" href="#s3"><span class="toc-num">3</span> Authentication</a>
+      <a class="toc-entry" href="#s4"><span class="toc-num">4</span> Rate Limiting</a>
+    </div>
+    <div class="toc-group">
+      <div class="toc-group-title">API Reference</div>
+      <a class="toc-entry" href="#s5"><span class="toc-num">5</span> Data Plan APIs</a>
+      <a class="toc-entry" href="#s6"><span class="toc-num">6</span> Account Management APIs</a>
+      <a class="toc-entry" href="#s7"><span class="toc-num">7</span> eSIM Top-up &amp; Data Wallet</a>
+      <a class="toc-entry" href="#s8"><span class="toc-num">8</span> Voucher Purchase API</a>
+      <a class="toc-entry" href="#s9"><span class="toc-num">9</span> Master Error Code Reference</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ 0: PARTNERSHIP MODELS ═══════════════════ -->
+<div class="section" id="s0">
+  <div class="section-num">Section 0</div>
+  <h2 class="section-title">Partnership Models</h2>
+  <p>Eskimo offers two API-based partnership tiers. The underlying External Partner API is identical for both; the difference is account visibility and branding isolation.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:28%">Feature</th><th>Merchant Reseller</th><th>White-Label</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Customer login</strong></td><td>Can log in to Eskimo portal</td><td>Cannot log in to Eskimo — fully isolated to partner platform</td></tr>
+        <tr><td><strong>Branding</strong></td><td>Eskimo brand visible to customer</td><td>Partner brand only — Eskimo is not visible</td></tr>
+        <tr><td><strong>Ideal for</strong></td><td>Resellers who redirect customers to Eskimo's interface</td><td>Partners running their own storefront, app, or checkout flow</td></tr>
+        <tr><td><strong>API access</strong></td><td>Full External Partner API</td><td>Full External Partner API (same)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout tip">
+    <span class="callout-icon">◈</span>
+    <span>White-Label is the recommended model for partners with their own checkout flow (e.g., own storefront with Stripe or another payment provider).</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ 1: GETTING STARTED ═══════════════════ -->
+<div class="section" id="s1">
+  <div class="section-num">Section 1</div>
+  <h2 class="section-title">Getting Started</h2>
+
+  <div class="subsection">
+    <div class="subsection-title"><span class="sub-anchor">1.1</span> Base URLs</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Environment</th><th>Base URL</th></tr></thead>
+      <tbody>
+        <tr><td>Staging</td><td><code>https://app-eskimo-api-stage-sea-001.azurewebsites.net</code></td></tr>
+        <tr><td>Production</td><td><code>https://api.eskimo.travel</code></td></tr>
+      </tbody>
+    </table></div>
+    <p class="text-muted" style="margin-top:10px">All endpoint paths in this document append to the base URL, e.g. <code>https://api.eskimo.travel/api/external-api-adapter/all-data-plan</code>.</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="subsection">
+    <div class="subsection-title"><span class="sub-anchor">1.2</span> Credentials</div>
+    <p>API credentials are managed at <strong>Partner Portal → Admin Settings → API Configuration</strong>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th style="width:30%">Setting</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>App Status</strong> (ON/OFF)</td><td>Master switch — disables all API access when OFF</td></tr>
+        <tr><td><strong>App ID</strong></td><td>25-character unique identifier (read-only)</td></tr>
+        <tr><td><strong>API Secret Key</strong></td><td>25-character secret key (partially masked — treat like a password)</td></tr>
+        <tr><td><strong>Change API Secret Key</strong></td><td>Generates a new key; existing key is <strong>immediately invalidated</strong></td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn">
+      <span class="callout-icon">⚠</span>
+      <span>Anyone holding your API Secret Key has full access to your partner APIs. Never expose it in client-side code or version control.</span>
+    </div>
+    <p class="text-muted">Contact your Eskimo account manager to activate API access for the first time.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════ 2: INTEGRATION FLOW ═══════════════════ -->
+<div class="section" id="s2">
+  <div class="section-num">Section 2</div>
+  <h2 class="section-title">Integration Flow</h2>
+  <p>The standard end-to-end flow for White-Label and Merchant Reseller partners:</p>
+  <div class="flow">
+[1] Fetch available eSIM plans
+     GET /all-data-plan  (optional filters: coverageType, coverageCode, planType)
+     ↓
+[2] Customer selects a plan and pays on your storefront
+     (Payment is handled entirely by your platform — Stripe, etc.)
+     ↓
+[3] Create a customer account  [first purchase only]
+     POST /users  →  returns accountId
+     ↓
+[4] Provision the eSIM — top up a data plan
+     POST /esim/top-up  →  uses accountId + planId
+     If the account has no eSIM yet, one is auto-activated and assigned.
+     ↓
+[5] Customer receives eSIM QR code + installation instructions via email
+     (Delivered automatically by Eskimo after successful top-up.
+      The QR code is NOT returned in the API response body.)
+     ↓
+[6] Customer installs eSIM — starts using data
+     ↓
+[7] Customer checks remaining data (via your dashboard)
+     POST /esim/data-wallet  →  returns remaining data, expiry, status per plan</div>
+  <div class="callout info">
+    <span class="callout-icon">ℹ</span>
+    <span>Eskimo credit is consumed at step 4. Ensure your partner credit balance is sufficient before provisioning. Monitor your balance via <code>GET /partner-credit</code> or the Partner Portal.</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ 3: AUTHENTICATION ═══════════════════ -->
+<div class="section" id="s3">
+  <div class="section-num">Section 3</div>
+  <h2 class="section-title">Authentication</h2>
+  <p>Every request must include three HTTP headers. Requests missing any header return <code>400 Bad Request</code>; requests with an invalid signature return <code>401 Unauthorized</code>.</p>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>AppID</code></td><td><span class="req-badge required">Required</span></td><td>Your unique partner identifier (from API Configuration)</td></tr>
+      <tr><td><code>Timestamp</code></td><td><span class="req-badge required">Required</span></td><td>Current Unix timestamp in <strong>seconds</strong> (e.g. <code>1749686400</code>). Must be unique per request.</td></tr>
+      <tr><td><code>Signature</code></td><td><span class="req-badge required">Required</span></td><td><code>Base64( HMAC_SHA256( AppID + APIKey + Timestamp ) )</code> — using your API Secret Key as the HMAC secret</td></tr>
+    </tbody>
+  </table></div>
+
+  <p style="margin-top:16px"><strong>Signature validation rules:</strong></p>
+  <ul style="margin:8px 0 16px 20px; font-size:0.88rem; line-height:1.8">
+    <li>The Timestamp must be within <strong>5 minutes</strong> of server time</li>
+    <li>The same Timestamp value cannot be reused (replay-attack prevention)</li>
+    <li>The signature string concatenates: <code>AppID</code> + <code>APISecretKey</code> + <code>Timestamp</code> (no separators)</li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="two-col">
+    <div>
+      <span class="code-label">Python</span>
+      <pre>import hmac, hashlib, base64, time
+
+app_id  = <span class="s">"YOUR_APP_ID"</span>
+api_key = <span class="s">"YOUR_API_KEY"</span>
+
+timestamp = str(int(time.time()))
+message   = f<span class="s">"{app_id}{api_key}{timestamp}"</span>
+
+sig = hmac.new(
+    api_key.encode(<span class="s">'utf-8'</span>),
+    message.encode(<span class="s">'utf-8'</span>),
+    hashlib.sha256
+).digest()
+
+headers = {
+    <span class="s">"AppID"</span>:     app_id,
+    <span class="s">"Timestamp"</span>: timestamp,
+    <span class="s">"Signature"</span>: base64.b64encode(sig)
+                        .decode(<span class="s">'utf-8'</span>)
+}</pre>
+    </div>
+    <div>
+      <span class="code-label">JavaScript (Node.js)</span>
+      <pre><span class="k">const</span> crypto = require(<span class="s">'crypto'</span>);
+
+<span class="k">const</span> appId  = <span class="s">'YOUR_APP_ID'</span>;
+<span class="k">const</span> apiKey = <span class="s">'YOUR_API_KEY'</span>;
+
+<span class="k">const</span> timestamp = String(
+  Math.floor(Date.now() / <span class="n">1000</span>)
+);
+<span class="k">const</span> message = `${appId}${apiKey}${timestamp}`;
+
+<span class="k">const</span> signature = crypto
+  .createHmac(<span class="s">'sha256'</span>, apiKey)
+  .update(message)
+  .digest(<span class="s">'base64'</span>);
+
+<span class="k">const</span> headers = {
+  <span class="s">'AppID'</span>:     appId,
+  <span class="s">'Timestamp'</span>: timestamp,
+  <span class="s">'Signature'</span>: signature
+};</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ 4: RATE LIMITING ═══════════════════ -->
+<div class="section" id="s4">
+  <div class="section-num">Section 4</div>
+  <h2 class="section-title">Rate Limiting</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Request limit</td><td><strong>100 requests / minute</strong> per partner</td></tr>
+      <tr><td>Block duration</td><td>1 minute</td></tr>
+      <tr><td>HTTP status on exceed</td><td><code>429 Too Many Requests</code></td></tr>
+      <tr><td>Error message</td><td><code>"Rate limit exceeded. Please wait 1 minute before trying again."</code></td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ═══════════════════ 5: DATA PLAN APIs ═══════════════════ -->
+<div class="section section-lg" id="s5">
+  <div class="section-num">Section 5</div>
+  <h2 class="section-title">Data Plan APIs</h2>
+
+  <!-- 5.1 -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">5.1</span> Get All Data Plans</div>
+    <div class="endpoint"><span class="method GET">GET</span> /api/external-api-adapter/all-data-plan</div>
+    <p>Returns the full catalog of available eSIM data plans. All filter parameters are optional query string parameters.</p>
+
+    <p><strong>Optional query parameters (all optional):</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>coverageType</code></td><td>Integer</td><td><code>0</code> = Global · <code>1</code> = Regional · <code>3</code> = Single Country</td></tr>
+        <tr><td><code>coverageCode</code></td><td>String</td><td>ISO alpha-2 country or region code (e.g. <code>SG</code>, <code>MY</code>)</td></tr>
+        <tr><td><code>planType</code></td><td>Integer</td><td><code>1</code> = Fixed Plan · <code>2</code> = Unlimited Plan</td></tr>
+      </tbody>
+    </table></div>
+    <p class="text-muted" style="margin-top:8px">Example: <code>GET /all-data-plan?coverageType=3&amp;coverageCode=SG&amp;planType=1</code></p>
+
+    <p style="margin-top:20px"><strong>Response fields per plan object:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>planId</code></td><td>String</td><td>Unique plan identifier — use this as <code>planId</code> in top-up requests</td></tr>
+        <tr><td><code>planName</code></td><td>String</td><td>Human-readable plan name (e.g. <em>"Singapore 7-Day 5GB"</em>)</td></tr>
+        <tr><td><code>validity</code></td><td>Integer</td><td>Plan validity in days</td></tr>
+        <tr><td><code>validityInfo</code></td><td>String</td><td>Human-readable validity label (e.g. <em>"7 Days"</em>)</td></tr>
+        <tr><td><code>dataCap</code></td><td>Integer</td><td>Data cap amount. For Unlimited Plans this is the daily cap in GB (e.g. <code>3</code> = 3GB/day); for Fixed Plans, total GB for the plan</td></tr>
+        <tr><td><code>dataUnit</code></td><td>String</td><td>Unit of data, e.g. <code>"GB"</code></td></tr>
+        <tr><td><code>dataCapPer</code></td><td>String</td><td><code>"day"</code> for unlimited plans; empty for fixed plans</td></tr>
+        <tr><td><code>prices</code></td><td>Array</td><td>Pricing array with all supported currencies — <code>USD</code>, <code>GBP</code>, <code>EUR</code>, <code>AUD</code>, <code>CAD</code>. e.g. <code>[{"USD": 18.0, "GBP": 14.5, "EUR": 16.9, "AUD": 27.0, "CAD": 24.5}]</code></td></tr>
+        <tr><td><code>priceInfo</code></td><td>Object / null</td><td>Extended price info (currently <code>null</code>)</td></tr>
+        <tr><td><code>capacityInfo</code></td><td>String</td><td>Human-readable capacity description</td></tr>
+        <tr><td><code>additionalInfo</code></td><td>String</td><td>Additional notes about the plan</td></tr>
+        <tr><td><code>activationInfo</code></td><td>String</td><td>Activation conditions (e.g. <em>"Activated on first use"</em>)</td></tr>
+        <tr><td><code>canTopUp</code></td><td>Boolean</td><td>Whether this plan supports top-up after purchase</td></tr>
+        <tr><td><code>tethering</code></td><td>Boolean</td><td>Whether hotspot / tethering is supported</td></tr>
+        <tr><td><code>phoneNumber</code></td><td>Boolean</td><td>Whether the plan includes a phone number</td></tr>
+        <tr><td><code>subscription</code></td><td>Boolean</td><td>Whether this is a subscription plan</td></tr>
+        <tr><td><code>subscriptionPeriod</code></td><td>Integer</td><td>Subscription period in days (<code>0</code> for non-subscription plans)</td></tr>
+        <tr><td><code>eKYC</code></td><td>Boolean</td><td>Whether the plan requires eKYC verification</td></tr>
+        <tr><td><code>promoEnabled</code></td><td>Boolean</td><td>Whether a promotional price is currently active</td></tr>
+        <tr><td><code>internetBreakouts</code></td><td>Object / null</td><td>Internet breakout configuration (currently <code>null</code>)</td></tr>
+        <tr><td><code>dataURL</code></td><td>String</td><td>Deep link to the plan page on Eskimo (includes <code>?partner_id=PN…</code> for affiliate tracking)</td></tr>
+        <tr><td><code>coverages</code></td><td>Array</td><td>List of covered countries/regions — see structure below</td></tr>
+        <tr><td><code>planFilter</code></td><td>Object</td><td>Category metadata — see structure below</td></tr>
+      </tbody>
+    </table></div>
+
+    <p style="margin-top:20px"><strong><code>coverages[]</code> structure:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>code</code></td><td>String</td><td>ISO alpha-2 country code (e.g. <code>"SG"</code>)</td></tr>
+        <tr><td><code>networks[].name</code></td><td>String</td><td>Carrier name (e.g. <code>"Singtel"</code>)</td></tr>
+        <tr><td><code>networks[].types[]</code></td><td>String[]</td><td>Supported network types (e.g. <code>["4G", "5G"]</code>)</td></tr>
+      </tbody>
+    </table></div>
+
+    <p style="margin-top:20px"><strong><code>planFilter</code> structure:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Values</th></tr></thead>
+      <tbody>
+        <tr><td><code>coverageType</code></td><td><code>1</code> = Global · <code>2</code> = Regional · <code>3</code> = Single Country</td></tr>
+        <tr><td><code>coverageName</code></td><td>e.g. <code>"Global"</code>, <code>"Asia Pacific"</code>, <code>"Singapore"</code></td></tr>
+        <tr><td><code>usageScheme</code></td><td><code>1</code> = Fixed Plan · <code>2</code> = Unlimited Plan</td></tr>
+      </tbody>
+    </table></div>
+
+    <span class="code-label" style="margin-top:20px;display:block">Example response object (single plan)</span>
+    <pre>{
+  <span class="k">"planId"</span>:          <span class="s">"abc-123-xyz"</span>,
+  <span class="k">"planName"</span>:        <span class="s">"Singapore 7-Day 5GB"</span>,
+  <span class="k">"validity"</span>:        <span class="n">7</span>,
+  <span class="k">"validityInfo"</span>:    <span class="s">"7 Days"</span>,
+  <span class="k">"dataCap"</span>:         <span class="n">5</span>,
+  <span class="k">"dataUnit"</span>:        <span class="s">"GB"</span>,
+  <span class="k">"dataCapPer"</span>:      <span class="s">""</span>,
+  <span class="k">"prices"</span>:          [{ <span class="s">"USD"</span>: <span class="n">18.0</span>, <span class="s">"GBP"</span>: <span class="n">14.5</span>, <span class="s">"EUR"</span>: <span class="n">16.9</span>, <span class="s">"AUD"</span>: <span class="n">27.0</span>, <span class="s">"CAD"</span>: <span class="n">24.5</span> }],
+  <span class="k">"priceInfo"</span>:       <span class="k">null</span>,
+  <span class="k">"capacityInfo"</span>:    <span class="s">"5 GB total"</span>,
+  <span class="k">"additionalInfo"</span>:  <span class="s">""</span>,
+  <span class="k">"activationInfo"</span>:  <span class="s">"Activated on first use"</span>,
+  <span class="k">"canTopUp"</span>:        <span class="n">true</span>,
+  <span class="k">"tethering"</span>:       <span class="n">true</span>,
+  <span class="k">"phoneNumber"</span>:     <span class="n">false</span>,
+  <span class="k">"subscription"</span>:    <span class="n">false</span>,
+  <span class="k">"subscriptionPeriod"</span>: <span class="n">0</span>,
+  <span class="k">"eKYC"</span>:            <span class="n">false</span>,
+  <span class="k">"promoEnabled"</span>:    <span class="n">false</span>,
+  <span class="k">"internetBreakouts"</span>: <span class="k">null</span>,
+  <span class="k">"dataURL"</span>:         <span class="s">"https://app.eskimo.com/data-plan/abc-123?partner_id=PN1234"</span>,
+  <span class="k">"coverages"</span>: [
+    {
+      <span class="k">"code"</span>: <span class="s">"SG"</span>,
+      <span class="k">"networks"</span>: [
+        { <span class="k">"name"</span>: <span class="s">"Singtel"</span>, <span class="k">"types"</span>: [<span class="s">"4G"</span>, <span class="s">"5G"</span>] },
+        { <span class="k">"name"</span>: <span class="s">"StarHub"</span>, <span class="k">"types"</span>: [<span class="s">"4G"</span>] }
+      ]
+    }
+  ],
+  <span class="k">"planFilter"</span>: {
+    <span class="k">"coverageType"</span>: <span class="n">3</span>,
+    <span class="k">"coverageName"</span>: <span class="s">"Singapore"</span>,
+    <span class="k">"usageScheme"</span>:  <span class="n">1</span>
+  }
+}</pre>
+    <div class="callout info">
+      <span class="callout-icon">ℹ</span>
+      <span>Unlimited Plans (<code>planType</code> / <code>usageScheme</code> = <code>2</code>) return <code>dataCapPer: "day"</code> with the daily cap in <code>dataCap</code> — currently <strong>3 GB/day</strong> for applicable plans.</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 5.2 -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">5.2</span> Search Data Plans (with Filters)</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/data-plan/search</div>
+    <p>Alternative search endpoint — filter plans by coverage and type using a JSON request body.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>coverageType</code></td><td>Integer</td><td><span class="req-badge optional">Optional</span></td><td><code>0</code> = Global · <code>1</code> = Regional · <code>3</code> = Single Country</td></tr>
+        <tr><td><code>coverageCode</code></td><td>String[]</td><td><span class="req-badge optional">Optional</span></td><td>ISO alpha-2 codes, e.g. <code>["SG", "MY"]</code></td></tr>
+        <tr><td><code>planType</code></td><td>Integer</td><td><span class="req-badge optional">Optional</span></td><td><code>1</code> = Fixed Plan · <code>2</code> = Unlimited Plan</td></tr>
+      </tbody>
+    </table></div>
+    <p class="text-muted">Response structure is identical to <strong>5.1 Get All Data Plans</strong>.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 5.3 -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">5.3</span> Partner Info &amp; Credit Balance (Supplementary)</div>
+    <div class="endpoint"><span class="method GET">GET</span> /api/external-api-adapter/partner <span class="method-note">— partner profile</span></div>
+    <div class="endpoint"><span class="method GET">GET</span> /api/external-api-adapter/partner-credit <span class="method-note">— credit balance</span></div>
+    <p>Monitoring endpoints for internal dashboards. Not required for the core provisioning flow. Partners can also check their credit balance and profile in the Partner Portal.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════ 6: ACCOUNT MANAGEMENT ═══════════════════ -->
+<div class="section section-lg" id="s6">
+  <div class="section-num">Section 6</div>
+  <h2 class="section-title">Account Management APIs</h2>
+  <div class="callout info">
+    <span class="callout-icon">ℹ</span>
+    <span><strong>Requires:</strong> White-Label Partnership. Accounts created here are customer accounts under your partner program — isolated from Eskimo's public user base.</span>
+  </div>
+
+  <!-- 6.1 Create -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">6.1</span> Create Account</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/users</div>
+    <p>Creates a new customer account. The account is immediately ready for eSIM top-up once created.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>accountEmail</code></td><td>String</td><td><span class="req-badge required">Required</span></td><td>Valid email address; max 200 chars; case-insensitive; unique under your partner account</td></tr>
+      </tbody>
+    </table></div>
+    <span class="code-label">Success response</span>
+    <pre>{
+  <span class="k">"isSuccess"</span>: <span class="n">true</span>,
+  <span class="k">"messages"</span>: [{ <span class="k">"content"</span>: <span class="s">"Create partner account successfully"</span>, <span class="k">"type"</span>: <span class="n">0</span> }],
+  <span class="k">"data"</span>: {
+    <span class="k">"requestId"</span>:    <span class="s">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>,
+    <span class="k">"accountId"</span>:    <span class="s">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>,
+    <span class="k">"accountEmail"</span>: <span class="s">"user@yourplatform.com"</span>,
+    <span class="k">"createdAt"</span>:    <span class="s">"2026-06-30T10:11:12Z"</span>
+  }
+}</pre>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Error Code</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><code>EXT_PARTNER_MISSING</code></td><td>Partner credentials not provided in request</td></tr>
+        <tr><td><code>EXT_PARTNER_ID_INVALID</code></td><td>Partner AppID is invalid</td></tr>
+        <tr><td><code>EXT_PARTNER_NO_ACTIVE_ADMIN</code></td><td>Partner account has no active admin</td></tr>
+        <tr><td><code>EXT_REQUEST_REQUIRED</code></td><td>Request body is missing or empty</td></tr>
+        <tr><td><code>EXT_PARTNER_NOT_FOUND</code></td><td>Partner ID not found in the system</td></tr>
+        <tr><td><code>EXT_PARTNER_NOT_CORPORATE</code></td><td>Partner does not have White-Label / Corporate Program enabled</td></tr>
+        <tr><td><code>EXT_CREATE_WORKER_FAILED</code></td><td>Internal service failure during account creation</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 6.2 Edit -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">6.2</span> Edit Account Email</div>
+    <div class="endpoint"><span class="method PUT">PUT</span> /api/external-api-adapter/users</div>
+    <p>Updates the email address of an existing customer account.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>accountId</code></td><td>String</td><td><span class="req-badge required">Required</span></td><td>Unique identifier of the account to update</td></tr>
+        <tr><td><code>accountEmail</code></td><td>String</td><td><span class="req-badge required">Required</span></td><td>New email address; valid format; max 200 chars</td></tr>
+      </tbody>
+    </table></div>
+    <span class="code-label">Success response</span>
+    <pre>{
+  <span class="k">"isSuccess"</span>: <span class="n">true</span>,
+  <span class="k">"messages"</span>: [{ <span class="k">"content"</span>: <span class="s">"Edit partner account successfully"</span>, <span class="k">"type"</span>: <span class="n">0</span> }],
+  <span class="k">"data"</span>: {
+    <span class="k">"requestId"</span>:    <span class="s">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>,
+    <span class="k">"accountId"</span>:    <span class="s">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>,
+    <span class="k">"accountEmail"</span>: <span class="s">"new@yourplatform.com"</span>,
+    <span class="k">"updatedAt"</span>:    <span class="s">"2026-06-30T10:11:12Z"</span>
+  }
+}</pre>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Error Code</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><code>EXT_PARTNER_MISSING</code></td><td>Partner credentials not provided</td></tr>
+        <tr><td><code>EXT_PARTNER_ID_INVALID</code></td><td>Partner AppID is invalid</td></tr>
+        <tr><td><code>EXT_PARTNER_NO_ACTIVE_ADMIN</code></td><td>Partner account has no active admin</td></tr>
+        <tr><td><code>EXT_REQUEST_REQUIRED</code></td><td>Request body is missing or empty</td></tr>
+        <tr><td><code>EXT_ACCOUNT_ID_REQUIRED</code></td><td><code>accountId</code> field missing</td></tr>
+        <tr><td><code>EXT_ACCOUNT_EMAIL_INVALID</code></td><td>Email is invalid, empty, or exceeds 200 chars</td></tr>
+        <tr><td><code>EXT_UPDATE_WORKER_FAILED</code></td><td>Internal service failure</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 6.3 Suspend -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">6.3</span> Suspend Account</div>
+    <div class="endpoint"><span class="method DELETE">DELETE</span> /api/external-api-adapter/users/{accountId}</div>
+    <div class="callout warn">
+      <span class="callout-icon">⚠</span>
+      <span><strong>This is a suspend operation, not a hard delete.</strong> The account and its eSIM are deactivated. eSIM suspension may take up to 1 hour to complete.</span>
+    </div>
+    <span class="code-label">Success response</span>
+    <pre>{
+  <span class="k">"isSuccess"</span>: <span class="n">true</span>,
+  <span class="k">"messages"</span>: [{
+    <span class="k">"content"</span>: <span class="s">"Suspension account success. eSIM Suspension in process. Please check again after 1 hours."</span>,
+    <span class="k">"type"</span>: <span class="n">0</span>
+  }]
+}</pre>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Error Code</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><code>EXT_PARTNER_MISSING</code></td><td>Partner credentials not provided</td></tr>
+        <tr><td><code>EXT_PARTNER_ID_INVALID</code></td><td>Partner AppID is invalid</td></tr>
+        <tr><td><code>EXT_PARTNER_NO_ACTIVE_ADMIN</code></td><td>Partner account has no active admin</td></tr>
+        <tr><td><code>EXT_PARTNER_IDS_REQUIRED</code></td><td><code>accountId</code> missing in request path</td></tr>
+        <tr><td><code>EXT_DELETE_WORKER_FAILED</code></td><td>Internal service failure</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 6.4 Search -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">6.4</span> Search Accounts</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/users/search</div>
+    <p>Search customer accounts under your partner program. All fields are optional.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>accountId</code></td><td>String</td><td>Filter by account ID</td></tr>
+        <tr><td><code>accountEmail</code></td><td>String</td><td>Filter by email address</td></tr>
+        <tr><td><code>accountIccid</code></td><td>String</td><td>Filter by eSIM ICCID</td></tr>
+        <tr><td><code>pageIndex</code></td><td>Integer</td><td>Page number, starts at <code>1</code></td></tr>
+        <tr><td><code>pageSize</code></td><td>Integer</td><td>Records per page (e.g. <code>25</code>)</td></tr>
+      </tbody>
+    </table></div>
+    <span class="code-label">Success response</span>
+    <pre>{
+  <span class="k">"isSuccess"</span>: <span class="n">true</span>,
+  <span class="k">"data"</span>: {
+    <span class="k">"numOfPages"</span>:   <span class="n">5</span>,
+    <span class="k">"numOfRecords"</span>: <span class="n">112</span>,
+    <span class="k">"pageIndex"</span>:    <span class="n">1</span>,
+    <span class="k">"data"</span>: [
+      {
+        <span class="k">"accountId"</span>:    <span class="s">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>,
+        <span class="k">"accountEmail"</span>: <span class="s">"user1@yourplatform.com"</span>,
+        <span class="k">"accountIccid"</span>: <span class="s">"8988112345678901234"</span>
+      }
+    ]
+  }
+}</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════ 7: eSIM TOP-UP & DATA WALLET ═══════════════════ -->
+<div class="section section-lg" id="s7">
+  <div class="section-num">Section 7</div>
+  <h2 class="section-title">eSIM Top-up &amp; Data Wallet APIs</h2>
+  <div class="callout info">
+    <span class="callout-icon">ℹ</span>
+    <span><strong>Requires:</strong> White-Label Partnership.</span>
+  </div>
+
+  <!-- 7.1 Top-up -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">7.1</span> Top Up Account eSIM</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/esim/top-up</div>
+    <p>Provisions a data plan to a customer account. If the account has no eSIM assigned yet, one is automatically activated and assigned before the top-up is applied.</p>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>accountId</code></td><td>String</td><td><span class="req-badge required">Required</span></td><td>Account email or account ID; max 254 chars</td></tr>
+        <tr><td><code>planId</code></td><td>String</td><td><span class="req-badge required">Required</span></td><td>Data plan ID from the listing API</td></tr>
+        <tr><td><code>clientRefId</code></td><td>String</td><td><span class="req-badge optional">Optional</span></td><td>Your own reference/order ID; max 150 chars; <strong>must be unique per partner</strong> — use for idempotency and reconciliation</td></tr>
+      </tbody>
+    </table></div>
+
+    <span class="code-label">Success response</span>
+    <pre>{
+  <span class="k">"isSuccess"</span>: <span class="n">true</span>,
+  <span class="k">"messages"</span>: [{ <span class="k">"content"</span>: <span class="s">"Top-up request created successfully"</span>, <span class="k">"type"</span>: <span class="n">0</span> }],
+  <span class="k">"data"</span>: {
+    <span class="k">"topUpId"</span>:     <span class="s">"TU-260630-0838923"</span>,
+    <span class="k">"accountId"</span>:   <span class="s">"user@yourplatform.com"</span>,
+    <span class="k">"planId"</span>:      <span class="s">"abc-123-xyz"</span>,
+    <span class="k">"clientRefId"</span>: <span class="s">"ORDER-20260630-00001"</span>,
+    <span class="k">"createdAt"</span>:   <span class="s">"2026-06-30T10:11:12Z"</span>
+  }
+}</pre>
+
+    <div class="callout tip">
+      <span class="callout-icon">◈</span>
+      <span>After a successful top-up, Eskimo automatically emails the customer their <strong>eSIM QR code and installation instructions</strong>. The QR code is not included in the API response.</span>
+    </div>
+
+    <div class="table-wrap" style="margin-top:16px"><table>
+      <thead><tr><th>Error Code</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><code>EXT_PARTNER_MISSING</code></td><td>Partner credentials not provided</td></tr>
+        <tr><td><code>EXT_PARTNER_ID_INVALID</code></td><td>Partner AppID is invalid</td></tr>
+        <tr><td><code>EXT_PARTNER_NO_ACTIVE_ADMIN</code></td><td>Partner account has no active admin</td></tr>
+        <tr><td><code>EXT_REQUEST_REQUIRED</code></td><td>Request body is missing or empty</td></tr>
+        <tr><td><code>EXT_ACCOUNT_ID_REQUIRED</code></td><td><code>accountId</code> field missing</td></tr>
+        <tr><td><code>EXT_PLAN_ID_REQUIRED</code></td><td><code>planId</code> field missing</td></tr>
+        <tr><td><code>EXT_CLIENT_REF_TOO_LONG</code></td><td><code>clientRefId</code> exceeds 150 characters</td></tr>
+        <tr><td><code>EXT_CLIENT_REF_ALREADY_EXISTS</code></td><td>Duplicate <code>clientRefId</code> for this partner</td></tr>
+        <tr><td><code>EXT_PARTNER_ACCOUNT_NOT_FOUND</code></td><td>Partner account record not found</td></tr>
+        <tr><td><code>EXT_WORKER_NOT_FOUND</code></td><td>Customer <code>accountId</code> not found</td></tr>
+        <tr><td><code>EXT_WORKER_TERMINATED</code></td><td>Customer account is suspended</td></tr>
+        <tr><td><code>EXT_PARTNER_PAYMENT_METHOD_MISSING</code></td><td>No payment method configured on the partner account</td></tr>
+        <tr><td><code>EXT_PARTNER_CREDIT_INSUFFICIENT</code></td><td>Partner credit balance is too low</td></tr>
+        <tr><td><code>EXT_TOPUP_PLAN_LIST_NULL</code></td><td>Plan list is null — plan data unavailable</td></tr>
+        <tr><td><code>EXT_TOPUP_PLAN_LIST_EMPTY</code></td><td>Plan list is empty — no plans match</td></tr>
+        <tr><td><code>EXT_TOPUP_PLAN_LIST_INVALID</code></td><td><code>planId</code> not found or invalid</td></tr>
+        <tr><td><code>EXT_DATA_PLAN_CATEGORY_FAILED</code></td><td>Failed to retrieve plan category data</td></tr>
+        <tr><td><code>EXT_PARTNER_PROGRAM_INVALID</code></td><td>Corporate / White-Label program has expired</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 7.2 Data Wallet -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">7.2</span> View Account Data Wallet</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/esim/data-wallet</div>
+    <p>Returns all data plans in a customer account's eSIM wallet, including remaining data, activation date, expiry, and status.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>accountId</code></td><td>String</td><td><span class="req-badge required">Required</span></td><td>Customer account ID</td></tr>
+        <tr><td><code>searchTopUpId</code></td><td>String</td><td><span class="req-badge optional">Optional</span></td><td>Filter by top-up transaction ID</td></tr>
+        <tr><td><code>searchPlanId</code></td><td>String</td><td><span class="req-badge optional">Optional</span></td><td>Filter by data plan ID (must be a valid GUID)</td></tr>
+        <tr><td><code>searchPlanName</code></td><td>String</td><td><span class="req-badge optional">Optional</span></td><td>Filter by plan name (partial match)</td></tr>
+        <tr><td><code>status</code></td><td>Integer</td><td><span class="req-badge optional">Optional</span></td><td><code>2</code> = USED · <code>3</code> = USED_UP · <code>4</code> = CANCELED (omit = all)</td></tr>
+      </tbody>
+    </table></div>
+
+    <p style="margin-top:16px"><strong>Success response fields:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>data.accountId</code></td><td>String</td><td>Account ID</td></tr>
+        <tr><td><code>data.accountEmail</code></td><td>String</td><td>Account email address</td></tr>
+        <tr><td><code>data.accountIccid</code></td><td>String</td><td>eSIM ICCID</td></tr>
+        <tr><td><code>data.numOfRecords</code></td><td>Integer</td><td>Total number of data plan records</td></tr>
+        <tr><td><code>data.data[].topUpId</code></td><td>String</td><td>Unique top-up transaction ID</td></tr>
+        <tr><td><code>data.data[].planId</code></td><td>String</td><td>Data plan ID</td></tr>
+        <tr><td><code>data.data[].dataPlanName</code></td><td>String</td><td>Data plan name</td></tr>
+        <tr><td><code>data.data[].status</code></td><td>Integer</td><td><code>2</code> = USED · <code>3</code> = USED_UP · <code>4</code> = CANCELED</td></tr>
+        <tr><td><code>data.data[].initialValue</code></td><td>Decimal</td><td>Original data total in bytes</td></tr>
+        <tr><td><code>data.data[].currentValue</code></td><td>Decimal</td><td>Remaining data in bytes</td></tr>
+        <tr><td><code>data.data[].activationDate</code></td><td>DateTime (UTC)</td><td>When the plan was first activated</td></tr>
+        <tr><td><code>data.data[].effectiveDate</code></td><td>DateTime (UTC)</td><td>When the plan became effective</td></tr>
+        <tr><td><code>data.data[].purchaseDate</code></td><td>DateTime (UTC)</td><td>When the plan was purchased / assigned</td></tr>
+        <tr><td><code>data.data[].expireDate</code></td><td>DateTime (UTC)</td><td>When the plan expires</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="table-wrap" style="margin-top:16px"><table>
+      <thead><tr><th>Error Code</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><code>EXT_ACCOUNT_ID_REQUIRED</code></td><td><code>accountId</code> field missing</td></tr>
+        <tr><td><code>EXT_WORKER_NOT_FOUND</code></td><td>Customer account not found</td></tr>
+        <tr><td><code>EXT_SEARCH_PLAN_ID_INVALID</code></td><td><code>searchPlanId</code> is not a valid GUID</td></tr>
+        <tr><td><code>EXT_STATUS_FILTER_INVALID</code></td><td>Status value is not <code>2</code>, <code>3</code>, or <code>4</code></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 8: VOUCHER PURCHASE API ═══════════════════ -->
+<div class="section section-lg" id="s8">
+  <div class="section-num">Section 8</div>
+  <h2 class="section-title">Voucher Purchase API</h2>
+  <div class="callout warn">
+    <span class="callout-icon">⚠</span>
+    <span><strong>Partial reference.</strong> Endpoints below are confirmed via engineering tickets. Full field-level request/response schemas for 8.1–8.3 are maintained in a separate internal spec pending consolidation into this document — contact the API team for the complete schema before integrating. Do not infer undocumented fields.</span>
+  </div>
+
+  <!-- 8.1 Purchase Voucher -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">8.1</span> Purchase (Generate) Voucher</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/voucher/purchase</div>
+    <p>Generates a batch of vouchers for the partner. Uses the standard header authentication (<a href="#s3">Section 3</a>) and is subject to the standard rate limit (<a href="#s4">Section 4</a>).</p>
+
+    <p><strong>Known request constraints:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Constraint</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Max vouchers per request</td><td><strong>100.</strong> Requests above this limit return <code>isSuccess: false</code>, HTTP <code>400</code>, message <code>"Maximum 100 vouchers per request allowed."</code></td></tr>
+        <tr><td><code>startDate</code> / <code>endDate</code></td><td>Removed from the request — no longer accepted or required.</td></tr>
+      </tbody>
+    </table></div>
+
+    <p style="margin-top:16px"><strong>Confirmed response fields:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>batchId</code></td><td>Transaction ID for the generated batch</td></tr>
+        <tr><td><code>totalVouchers</code></td><td>Total number of vouchers included in the batch</td></tr>
+        <tr><td><code>totalPrice</code></td><td>Total credit charged for the batch</td></tr>
+      </tbody>
+    </table></div>
+    <p class="text-muted" style="margin-top:8px">Success message: <code>"Generate vouchers successfully."</code></p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 8.2 Refund Voucher -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">8.2</span> Refund Voucher</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/voucher/refund</div>
+    <p>Refunds a previously purchased voucher. Uses the standard header authentication — <code>partnerid</code> is no longer accepted as a request field; the partner is identified from the authenticated request headers instead.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 8.3 Search Vouchers -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">8.3</span> Search Vouchers</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/voucher/search</div>
+    <p>Searches vouchers issued to the partner. <code>partnerid</code> is no longer accepted as a request field (identified via headers). Supports lookup by <code>batchID</code> in addition to existing filters.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 8.4 Generate Unique Gift Code -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">8.4</span> Generate Unique Gift Code</div>
+    <div class="endpoint"><span class="method POST">POST</span> /api/external-api-adapter/gift-code/generate-unique-code</div>
+    <p>Generates unique gift codes in bulk for a partner campaign. Uses the standard header authentication (<a href="#s3">Section 3</a>).</p>
+
+    <p><strong>Confirmed request fields:</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>campaignId</code></td><td><span class="req-badge required">Required</span></td><td>Must be unique per partner</td></tr>
+        <tr><td><code>quantity</code></td><td><span class="req-badge required">Required</span></td><td>Number of gift codes to generate</td></tr>
+        <tr><td><code>startTime</code></td><td><span class="req-badge required">Required</span></td><td>Campaign validity start</td></tr>
+        <tr><td><code>endTime</code></td><td><span class="req-badge required">Required</span></td><td>Campaign validity end</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="callout warn">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Response schema not yet finalized.</strong> Do not publish or integrate against this endpoint's response format until confirmed by engineering.</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 8.5 Other Voucher / Gift Code endpoints -->
+  <div class="subsection no-break">
+    <div class="subsection-title"><span class="sub-anchor">8.5</span> Other Voucher &amp; Gift Code Endpoints</div>
+    <p>The following endpoints exist per the internal API inventory; detailed field-level documentation is pending.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/voucher/export</code></td><td>Export vouchers</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/voucher/export-by-Ids</code></td><td>Export vouchers by ID list</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/voucher/data-purchase</code></td><td>Data purchase via voucher</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/gift-code/search</code></td><td>Search gift codes</td></tr>
+        <tr><td><span class="method DELETE">DELETE</span></td><td><code>/api/external-api-adapter/gift-code/delete/{giftCode}</code></td><td>Delete a single gift code</td></tr>
+        <tr><td><span class="method DELETE">DELETE</span></td><td><code>/api/external-api-adapter/gift-code/multi-delete</code></td><td>Delete multiple gift codes</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/gift-code/export</code></td><td>Export gift codes</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/gift-code/export-by-id</code></td><td>Export gift codes by ID</td></tr>
+        <tr><td><span class="method POST">POST</span></td><td><code>/api/external-api-adapter/gift-code/list-campaign</code></td><td>List gift code campaigns</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ 9: MASTER ERROR CODES ═══════════════════ -->
+<div class="section" id="s9">
+  <div class="section-num">Section 9</div>
+  <h2 class="section-title">Master Error Code Reference</h2>
+
+  <div class="callout info">
+    <span class="callout-icon">ℹ</span>
+    <span><strong>Error response pattern:</strong> All <code>EXT_*</code> business-logic errors return HTTP <code>400</code> with <code>isSuccess: false</code>, a machine-readable <code>code</code> field, a human-readable <code>messages[]</code> array, and a <code>requestId</code> for support tracing.</span>
+  </div>
+
+  <span class="code-label" style="margin-top:16px;display:block">EXT_* error response shape (HTTP 400)</span>
+  <pre>{
+  <span class="k">"isSuccess"</span>: <span class="n">false</span>,
+  <span class="k">"code"</span>:      <span class="s">"EXT_PARTNER_CREDIT_INSUFFICIENT"</span>,
+  <span class="k">"requestId"</span>: <span class="s">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>,
+  <span class="k">"messages"</span>: [{ <span class="k">"content"</span>: <span class="s">"Insufficient credit!"</span>, <span class="k">"type"</span>: <span class="n">1</span> }]
+}</pre>
+
+  <div class="table-wrap" style="margin-top:20px"><table>
+    <thead><tr><th>HTTP</th><th>Code</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td>—</td><td>Bad Request — missing required header(s)</td></tr>
+      <tr><td><span class="http-badge http-4xx">401</span></td><td>—</td><td>Unauthorized — invalid or expired Signature</td></tr>
+      <tr><td><span class="http-badge http-429">429</span></td><td>—</td><td>Rate limit exceeded (over 100 req/min)</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_MISSING</code></td><td>Partner credentials not provided in request</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_ID_INVALID</code></td><td>Partner AppID is invalid</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_NO_ACTIVE_ADMIN</code></td><td>Partner account has no active admin user</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_REQUEST_REQUIRED</code></td><td>Request body is missing or empty</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_NOT_FOUND</code></td><td>Partner ID not found in the system</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_NOT_CORPORATE</code></td><td>Feature requires White-Label / Corporate Program</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_PROGRAM_INVALID</code></td><td>Corporate / White-Label program has expired</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_PAYMENT_METHOD_MISSING</code></td><td>No payment method configured on partner account</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_CREDIT_INSUFFICIENT</code></td><td>Partner credit balance is insufficient</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_ACCOUNT_NOT_FOUND</code></td><td>Partner account record not found</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_ACCOUNT_ID_REQUIRED</code></td><td><code>accountId</code> field is missing in request</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_ACCOUNT_EMAIL_INVALID</code></td><td>Email invalid or exceeds 200 characters</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_WORKER_NOT_FOUND</code></td><td>Customer account not found</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_WORKER_TERMINATED</code></td><td>Customer account is suspended</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PLAN_ID_REQUIRED</code></td><td><code>planId</code> field missing in request</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_TOPUP_PLAN_LIST_NULL</code></td><td>Plan list returned null — plan data unavailable</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_TOPUP_PLAN_LIST_EMPTY</code></td><td>Plan list is empty — no matching plans</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_TOPUP_PLAN_LIST_INVALID</code></td><td><code>planId</code> not found or not valid</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_DATA_PLAN_CATEGORY_FAILED</code></td><td>Failed to retrieve plan category data</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_CLIENT_REF_TOO_LONG</code></td><td><code>clientRefId</code> exceeds 150 characters</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_CLIENT_REF_ALREADY_EXISTS</code></td><td><code>clientRefId</code> already used by this partner</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_PARTNER_IDS_REQUIRED</code></td><td><code>accountId</code> missing in suspend request path</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_CREATE_WORKER_FAILED</code></td><td>Internal error during account creation</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_UPDATE_WORKER_FAILED</code></td><td>Internal error during account update</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_DELETE_WORKER_FAILED</code></td><td>Internal error during account suspension</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_SEARCH_PLAN_ID_INVALID</code></td><td><code>searchPlanId</code> is not a valid GUID format</td></tr>
+      <tr><td><span class="http-badge http-4xx">400</span></td><td><code>EXT_STATUS_FILTER_INVALID</code></td><td>Status filter value is not <code>2</code>, <code>3</code>, or <code>4</code></td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<div style="text-align:center; padding:48px 0 24px; font-size:0.78rem; color:var(--muted); border-top:1px solid var(--border); margin-top:48px;">
+  Eskimo External Partner API — Technical Documentation v3.1 &nbsp;·&nbsp; 2026-08-26 &nbsp;·&nbsp; Confidential — Partner Use Only<br>
+  <span style="margin-top:4px; display:block;">Eskimo Portals &nbsp;·&nbsp; eskimo.travel</span>
+</div>
+
+</div>
+</body>
+</html>

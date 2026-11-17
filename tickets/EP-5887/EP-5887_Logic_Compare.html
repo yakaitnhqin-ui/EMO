@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>EP-5887 — So sánh logic No-Expiry & câu hỏi cần confirm</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #1a1a1a; }
+  .meta { font-size: 11px; color: #555; margin-bottom: 2px; }
+  .meta b { color: #1a1a1a; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 11px; }
+  th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #2b3a55; color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f4f6f9; }
+  .yes { color: #0f7a3d; font-weight: 700; }
+  .no { color: #b3261e; font-weight: 700; }
+  .warn { color: #b45309; font-weight: 700; }
+  .ac1 { border-left: 4px solid #2563eb; }
+  .ac2 { border-left: 4px solid #16a34a; }
+  .ac3 { border-left: 4px solid #6b7280; }
+  .ac4 { border-left: 4px solid #d97706; }
+  .sev-critical { background: #fdecea !important; }
+  .sev-major { background: #fff4e0 !important; }
+  .sev-minor { background: #f1f3f5 !important; }
+  .figure-wrap { text-align: center; margin: 6px 0 4px; }
+  figcaption { font-size: 10.5px; color: #555; margin-top: 4px; }
+  .legend { display: flex; gap: 18px; justify-content: center; font-size: 10.5px; margin-top: 2px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 12px; height: 12px; display: inline-block; border-radius: 2px; }
+  .note { font-size: 10.5px; color: #555; margin-top: 4px; }
+  .footer { margin-top: 24px; font-size: 10px; color: #777; border-top: 1px solid #ccc; padding-top: 6px; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; color: #fff; }
+  .pill-critical { background: #b3261e; }
+  .pill-major { background: #b45309; }
+  .pill-minor { background: #6b7280; }
+  .pill-done { background: #0f7a3d; }
+  .pill-pending { background: #2563eb; }
+  .pill-open { background: #9ca3af; }
+  .sev-done { background: #eafaf0 !important; }
+  .update-box { border: 1.5px solid #16a34a; background: #f3fdf6; border-radius: 6px; padding: 8px 12px; margin: 10px 0; font-size: 11px; }
+  .update-box b.tag { color: #0f7a3d; }
+</style>
+</head>
+<body>
+
+<h1>EP-5887 — [BE] Implement No-Expiry Logic</h1>
+<div class="update-box" style="border-color:#b3261e; background:#fdecea;">
+<b class="tag" style="color:#b3261e">⛔ CẢNH BÁO — Sơ đồ + phần AC3 trong tài liệu này ĐÃ LỖI THỜI (kiểm tra lại 15/09/2026):</b>
+AC3 (hộp nét đứt + mũi tên tím "convert AC3→AC2" trong sơ đồ bên dưới) <b>không còn là 1 phần của EP-5887</b> — đã bị xoá hẳn và tách thành ticket riêng <b>EP-5944</b> (comment #26575 trên Jira, 06/08/2026, ngay sau lần rewrite AC3 mà tài liệu này mô tả). Ngoài ra, <b>AC2 vẫn dùng mốc cố định 20/07/2026</b> (không đổi theo ngày release như AC1) — khác với những gì mục "Cập nhật" bên dưới từng khẳng định, tạo ra gap 20/07–30/07 do <b>EP-5949</b> xử lý.
+<br><b>Nội dung đúng nhất hiện tại nằm ở file <code>TC_EP-5887_No_Expiry_Logic.md</code></b> (đã re-scope) và <code>tickets/EP-5944/TC_EP-5944_Existing_User_NoExpiry.md</code> (AC3). Sơ đồ dưới đây giữ lại làm tài liệu lịch sử, chưa vẽ lại.
+</div>
+<div class="meta"><b>Mục đích tài liệu:</b> So sánh logic 3 nhóm user + trực quan hoá luồng phân nhóm, tổng hợp câu hỏi cần confirm với BA/Dev trước khi Dev bắt đầu / QC viết test.</div>
+<div class="meta"><b>Ticket:</b> EP-5887 (Trạng thái hiện tại: <b style="color:#0f7a3d">Staging QC</b> — dữ liệu ngày dưới đây là snapshot 06/08/2026, đã lỗi thời 1 phần) &nbsp;|&nbsp; <b>Ticket liên quan:</b> EP-5745, EP-5875, EP-5906, EP-5944, EP-5949 &nbsp;|&nbsp; <b>Người soạn:</b> Nhu Huynh &nbsp;|&nbsp; <b>Ngày cập nhật:</b> 2026-08-06 (v5 — sau BA update AC lần 2)</div>
+
+<div class="update-box" style="border-color:#6d28d9; background:#f7f3fe;">
+<b class="tag" style="color:#6d28d9">🆕 BA vừa update AC trên Jira (comment #26540, 06/08/2026):</b>
+Mốc cutoff chính thức đổi thành <b>"after/before the releasing"</b> (khớp confirm Dev trước đó = 30/07/2026) &nbsp;·&nbsp;
+<b>AC3 bị viết lại hoàn toàn</b> — không còn ổn định mãi mãi: hễ user AC3 mua/thêm data plan mới → <b>convert NGAY thành AC2</b> (xem sơ đồ, mũi tên tím). Đã rewrite TC-010/011, bổ sung TC-021→024 cho ambiguity mới. Xem bảng "🆕 BA update AC lần 2" trong file test case để biết chi tiết.
+</div>
+
+<div class="update-box">
+<b class="tag">✓ Đã confirm với Dev (06/08/2026):</b>
+(1) Job hàng tháng extend <b>+5 năm</b>/lần quét &nbsp;·&nbsp;
+(2) Mốc cutoff AC1 <b>không phải 20/07/2026</b> — là <b>ngày release PROD (30/07/2026)</b> &nbsp;·&nbsp;
+(3) Cơ chế cũ "+3 năm khi activate" bị bỏ hoàn toàn cho AC1, tính từ lần activate đầu tiên &nbsp;·&nbsp;
+(5) "Thiếu Internal Expiry Date" và "No-Expiry=true" là <b>2 trạng thái khác nhau</b>, không được suy luận lẫn nhau &nbsp;·&nbsp;
+(6) AC4 skip <b>toàn bộ plan của user</b> (không chỉ riêng plan paused, kể cả plan Active khác cũng không được extend).
+<br><b style="color:#2563eb">○ Vẫn đang chờ xác nhận:</b> (4) Transfer Data xuyên nhóm; (7) free data có trigger AC3→AC2 convert; (8) lot cũ + extend ngay lượt convert. Xem chi tiết mục 3 bên dưới.
+</div>
+
+<h2>1. Sơ đồ phân nhóm user & điểm rẽ nhánh</h2>
+
+<div class="figure-wrap">
+<figure style="margin:0;">
+<svg viewBox="0 0 1010 790" role="img" aria-label="Cây quyết định phân nhóm user: kiểm tra plan paused, sau đó ngày sign up so với thời điểm release PROD 30/07/2026, sau đó flag No-Expiry, dẫn tới AC1/AC2/AC4 và AC3 (trạng thái tạm, tự convert sang AC2 khi mua plan mới)" style="width:100%; max-width:820px; height:auto;">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+  </defs>
+
+  <!-- Start -->
+  <rect x="370" y="15" width="260" height="50" rx="6" fill="#eef1f6" stroke="#333"/>
+  <text x="500" y="36" text-anchor="middle" font-size="12" font-weight="600">User có data plan</text>
+  <text x="500" y="52" text-anchor="middle" font-size="11">(paid và/hoặc free)</text>
+
+  <line x1="500" y1="65" x2="500" y2="112" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Decision 1: paused -->
+  <polygon points="500,112 600,150 500,188 400,150" fill="#fff7ea" stroke="#d97706" stroke-width="1.5"/>
+  <text x="500" y="146" text-anchor="middle" font-size="11" font-weight="600">Đang có plan</text>
+  <text x="500" y="160" text-anchor="middle" font-size="11" font-weight="600">PAUSED?</text>
+
+  <line x1="600" y1="150" x2="726" y2="150" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="663" y="142" text-anchor="middle" font-size="10.5" fill="#0f7a3d">Có</text>
+
+  <line x1="500" y1="188" x2="500" y2="220" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="514" y="210" font-size="10.5" fill="#b3261e">Không</text>
+
+  <!-- AC4 box -->
+  <rect x="730" y="108" width="260" height="94" rx="6" class="ac4box" fill="#fff7ea" stroke="#d97706" stroke-width="2"/>
+  <text x="860" y="126" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">AC4 · Paused plan</text>
+  <text x="860" y="142" text-anchor="middle" font-size="10.5">Job hàng tháng: BỎ QUA</text>
+  <text x="860" y="156" text-anchor="middle" font-size="10.5">TOÀN BỘ plan của user</text>
+  <text x="860" y="172" text-anchor="middle" font-size="9.5" fill="#0f7a3d">✓ Đã confirm: kể cả plan Active</text>
+  <text x="860" y="185" text-anchor="middle" font-size="9.5" fill="#0f7a3d">khác cũng không được extend</text>
+
+  <!-- Decision 2: signup date -->
+  <polygon points="500,222 630,270 500,318 370,270" fill="#eef2ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="500" y="258" text-anchor="middle" font-size="10.5" font-weight="600">Sign up SAU ngày</text>
+  <text x="500" y="272" text-anchor="middle" font-size="10.5" font-weight="600">release PROD?</text>
+  <text x="500" y="286" text-anchor="middle" font-size="9" font-style="italic">(30/07/2026 — đã confirm)</text>
+
+  <line x1="400" y1="292" x2="200" y2="465" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="325" y="350" font-size="10.5" fill="#0f7a3d" transform="rotate(53 325 350)">Có</text>
+
+  <line x1="500" y1="318" x2="500" y2="352" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="514" y="340" font-size="10.5" fill="#b3261e">Không</text>
+
+  <!-- Decision 3: already No-Expiry -->
+  <polygon points="500,352 640,398 500,444 360,398" fill="#eefaf1" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="500" y="392" text-anchor="middle" font-size="10.5" font-weight="600">Đã đánh dấu</text>
+  <text x="500" y="405" text-anchor="middle" font-size="10.5" font-weight="600">No-Expiry?</text>
+  <text x="500" y="418" text-anchor="middle" font-size="9.5" font-style="italic">(từ EP-5745 / EP-5875)</text>
+
+  <line x1="500" y1="444" x2="500" y2="465" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="514" y="458" font-size="10.5" fill="#0f7a3d">Có</text>
+
+  <line x1="610" y1="418" x2="790" y2="465" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="720" y="432" font-size="10.5" fill="#b3261e">Không</text>
+
+  <!-- Outcome boxes -->
+  <rect x="60" y="465" width="280" height="150" rx="6" fill="#eef2ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="200" y="486" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">AC1 · New user</text>
+  <text x="80" y="504" font-size="10.5">Rollover khi mua thêm: <tspan font-weight="700" fill="#b3261e">KHÔNG</tspan></text>
+  <text x="80" y="520" font-size="10.5">Extend khi mua/activate: <tspan font-weight="700" fill="#b3261e">KHÔNG</tspan> (bỏ cả cơ chế cũ +3 năm)</text>
+  <text x="80" y="537" font-size="10.5">Job đầu tháng (hạn ≤32 ngày): <tspan font-weight="700" fill="#0f7a3d">CÓ +5 năm</tspan></text>
+  <text x="80" y="555" font-size="9.5" fill="#0f7a3d">✓ Giá trị extend job = +5 năm (đã confirm)</text>
+  <text x="80" y="571" font-size="9.5" fill="#0f7a3d">✓ Bỏ +3 năm áp dụng từ lần activate đầu (đã confirm)</text>
+  <text x="80" y="590" font-size="9.5" font-style="italic" fill="#92400e">⚠ Có áp dụng cho free data?</text>
+  <text x="80" y="603" font-size="9.5" font-style="italic" fill="#92400e">— CẦN CONFIRM</text>
+
+  <rect x="360" y="465" width="280" height="150" rx="6" fill="#eefaf1" stroke="#16a34a" stroke-width="2"/>
+  <text x="500" y="486" text-anchor="middle" font-size="12" font-weight="700" fill="#15803d">AC2 · Existing No-Expiry</text>
+  <text x="380" y="504" font-size="10.5">Rollover khi mua thêm: <tspan font-weight="700" fill="#b3261e">KHÔNG</tspan></text>
+  <text x="380" y="520" font-size="10.5">Extend +5 năm khi mua thêm: <tspan font-weight="700" fill="#0f7a3d">CÓ</tspan></text>
+  <text x="380" y="537" font-size="10.5">Job đầu tháng (hạn ≤32 ngày): <tspan font-weight="700" fill="#0f7a3d">CÓ +5 năm</tspan></text>
+  <text x="380" y="555" font-size="9.5" fill="#0f7a3d">✓ Giá trị extend job = +5 năm (đã confirm)</text>
+  <text x="380" y="571" font-size="9.5" font-style="italic" fill="#92400e">⚠ Khác AC1 DUY NHẤT ở dòng</text>
+  <text x="380" y="584" font-size="9.5" font-style="italic" fill="#92400e">"extend +5 năm khi mua" — rủi ro lẫn nhóm</text>
+  <text x="380" y="600" font-size="9.5" font-style="italic" fill="#2563eb">○ Field isNoExpiry AC1 vs AC2 chung/riêng?</text>
+
+  <rect x="660" y="465" width="300" height="200" rx="6" fill="#f3f4f6" stroke="#6b7280" stroke-width="2" stroke-dasharray="7,4"/>
+  <text x="810" y="486" text-anchor="middle" font-size="12" font-weight="700" fill="#374151">AC3 · Existing, chưa No-Expiry</text>
+  <text x="810" y="499" text-anchor="middle" font-size="9" font-style="italic" fill="#6b7280">(trạng thái TẠM — không ổn định)</text>
+  <text x="680" y="516" font-size="10" >Đk: chưa từng mua/thêm plan mới</text>
+  <text x="680" y="531" font-size="10">Internal + Singtel Expiry: giữ nguyên (legacy)</text>
+  <text x="680" y="550" font-size="10" fill="#6d28d9" font-weight="700">✓ Mua/thêm plan mới → convert NGAY → AC2</text>
+  <text x="680" y="563" font-size="9.5" fill="#6d28d9">   (lượt mua đó: rollover = false)</text>
+  <text x="680" y="581" font-size="9.5" font-style="italic" fill="#92400e">⚠ Free data có trigger convert? — CONFIRM</text>
+  <text x="680" y="594" font-size="9.5" font-style="italic" fill="#92400e">⚠ Lot cũ convert theo ngay không? — CONFIRM</text>
+  <text x="680" y="607" font-size="9.5" font-style="italic" fill="#92400e">⚠ +5 năm ngay lượt convert này? — CONFIRM</text>
+  <text x="680" y="623" font-size="9.5" font-style="italic" fill="#92400e">⚠ EP-5906 (Staging QC) cũng sửa nhóm này</text>
+  <text x="680" y="636" font-size="9.5" font-style="italic" fill="#92400e">   — 2 ticket chưa tham chiếu nhau</text>
+
+  <!-- Conversion arrow: AC3 -> AC2 -->
+  <path d="M 810,667 C 810,725 500,725 500,617" fill="none" stroke="#6d28d9" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+  <text x="655" y="742" text-anchor="middle" font-size="10" font-weight="600" fill="#6d28d9">Mua/thêm data plan mới → convert ngay</text>
+  <text x="655" y="756" text-anchor="middle" font-size="9.5" font-style="italic" fill="#6d28d9">(rollover = false cho đúng lượt kích hoạt)</text>
+</svg>
+<figcaption>Hình 1 — Cây quyết định phân nhóm user của EP-5887: kiểm tra plan paused (AC4) trước, sau đó ngày sign up so với thời điểm release PROD (30/07/2026 — đã confirm với Dev, không phải "20 Jul 2026" như câu chữ AC gốc), sau đó flag No-Expiry đã có từ EP-5745/EP-5875. AC3 (viền nét đứt) là trạng thái TẠM theo bản BA update lần 2 — biến mất ngay khi user mua/thêm bất kỳ data plan mới nào, chuyển thành AC2 vĩnh viễn (mũi tên tím cong). Chữ xanh lá/tím (✓) là điểm đã confirm; chữ nghiêng màu cam (⚠) là điểm còn cần confirm.</figcaption>
+</figure>
+</div>
+
+<div class="legend">
+  <span><i style="background:#2563eb"></i> AC1 — New user (sau ngày release PROD)</span>
+  <span><i style="background:#16a34a"></i> AC2 — Existing, đã No-Expiry</span>
+  <span><i style="background:#6b7280"></i> AC3 — Existing, chưa No-Expiry (trạng thái tạm)</span>
+  <span><i style="background:#6d28d9"></i> Mũi tên tím — AC3 tự convert sang AC2 khi mua plan mới</span>
+  <span><i style="background:#d97706"></i> AC4 — Có plan Paused (override job)</span>
+</div>
+
+<h2>2. Bảng so sánh logic chi tiết theo nhóm</h2>
+<table>
+<thead>
+<tr><th style="width:16%">Tiêu chí</th><th class="ac1" style="width:21%">AC1 · New user</th><th class="ac2" style="width:21%">AC2 · Existing No-Expiry</th><th class="ac3" style="width:21%">AC3 · Existing, chưa No-Expiry</th><th class="ac4" style="width:20%">AC4 · Paused plan</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><b>Điều kiện vào nhóm</b></td>
+  <td>Sign up <b>sau ngày release PROD (30/07/2026)</b> — đã confirm, chính thức ghi trong AC là "after the releasing"</td>
+  <td>Sign up <b>trước 30/07/2026</b> <b>và</b> đã được đánh dấu No-Expiry (qua EP-5745/EP-5875 <b>hoặc vừa convert từ AC3</b>)</td>
+  <td><b style="color:#6d28d9">🆕 Trạng thái TẠM:</b> sign up trước 30/07/2026 <b>và</b> CHƯA từng mua/thêm data plan mới nào (không còn là điểm dừng ổn định — biến mất ngay khi mua)</td>
+  <td>Đang có ≥1 data plan ở trạng thái Paused (cắt ngang cả 3 nhóm trên). <b>Đã confirm: skip toàn bộ plan của user</b>, không chỉ riêng plan paused</td>
+</tr>
+<tr>
+  <td><b>Rollover khi mua thêm paid plan</b></td>
+  <td class="no">Không áp dụng</td>
+  <td class="no">Không áp dụng</td>
+  <td>Không có gì để rollover (chưa mua) — <b style="color:#6d28d9">nếu mua → convert ngay sang AC2, lượt đó cũng rollover=false</b></td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><b>Extend Singtel Expiry Date khi mua thêm</b></td>
+  <td class="no">Không (kể cả cơ chế cũ +3 năm khi activate — đã bỏ hoàn toàn)</td>
+  <td class="yes">Có, +5 năm</td>
+  <td class="warn">🆕 Chưa rõ — lượt mua kích hoạt convert có +5 năm ngay không, hay chỉ từ lượt kế tiếp? (TC-EP-NXL-022)</td>
+  <td>—</td>
+</tr>
+<tr class="sev-critical">
+  <td><b>🆕 AC3 → AC2: lot/plan cũ có convert theo ngay không?</b></td>
+  <td colspan="3" class="warn">Chưa rõ — khi user AC3 convert, các lot cũ (trước khi mua) có tự động chuyển No-Expiry ngay (giống mechanic gốc EP-5745), hay chỉ account-level flag đổi còn lot cũ giữ nguyên hạn cũ? (TC-EP-NXL-021)</td>
+  <td>—</td>
+</tr>
+<tr class="sev-critical">
+  <td><b>🆕 AC3 → AC2: free data có trigger convert?</b></td>
+  <td colspan="3" class="warn">AC3 viết "added new <b>data plan</b>" — không có chữ "paid" như AC1/AC2. Free data (không phải mua) có kích hoạt convert không? (TC-EP-NXL-023)</td>
+  <td>—</td>
+</tr>
+<tr class="sev-done">
+  <td><b>Extend bởi scheduled job hàng tháng — thêm bao lâu?</b></td>
+  <td class="yes" colspan="2"><b>✓ Đã confirm: +5 năm</b> mỗi lần job quét (job chạy tự động 1 lần/tháng, áp dụng cho cả AC1 và AC2 khi Singtel Expiry còn ≤32 ngày)</td>
+  <td>—</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><b>Internal Expiry Date</b></td>
+  <td class="warn">Không được nêu trong AC — suy luận là không áp dụng</td>
+  <td class="warn">Không được nêu trong AC — suy luận là không áp dụng</td>
+  <td class="yes">Tiếp tục áp dụng — nhưng chỉ chừng nào user còn ở trạng thái tạm (chưa mua gì mới)</td>
+  <td>—</td>
+</tr>
+<tr class="sev-done">
+  <td><b>Phân biệt "thiếu Internal Expiry Date" vs "No-Expiry"</b></td>
+  <td colspan="3" class="yes">✓ Đã confirm: đây là <b>2 trạng thái khác nhau</b>. "Không có Internal Expiry Date" (VD: plan mới chưa dùng) KHÔNG được suy luận thành "No-Expiry = true" — hệ thống phải phân biệt rõ, xem TC-EP-NXL-019</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><b>Job đầu tháng (Singtel Expiry ≤32 ngày)</b></td>
+  <td class="yes">Có extend +5 năm</td>
+  <td class="yes">Có extend +5 năm</td>
+  <td>Không thuộc phạm vi</td>
+  <td class="no">Job bỏ qua toàn bộ user (mọi plan)</td>
+</tr>
+<tr>
+  <td><b>Free data plan</b></td>
+  <td class="warn" colspan="3">AC1–AC3 chỉ mô tả cho <b>paid</b> plan — hành vi rollover/extend cho free data chưa được nêu</td>
+  <td>—</td>
+</tr>
+<tr>
+  <td><b>Transfer Data giữa 2 nhóm khác nhau</b></td>
+  <td class="warn" colspan="3">Chưa có xác nhận chính thức. Có giả thuyết đề xuất: vì user sau 01/06/2026 đã tự động mark No-Expiry (EP-5875), transfer chỉ theo đúng flag của account nhận, không cần logic riêng — <b>nhưng vẫn cần BA/Dev chốt chính thức</b></td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+
+<h2>3. Checklist câu hỏi cần confirm trước khi Dev/QC bắt đầu</h2>
+<table>
+<thead>
+<tr><th style="width:4%">#</th><th style="width:9%">Mức độ</th><th style="width:19%">Vấn đề</th><th style="width:46%">Câu hỏi / Nội dung</th><th style="width:22%">Trạng thái</th></tr>
+</thead>
+<tbody>
+<tr class="sev-done"><td>1</td><td><span class="pill pill-critical">Critical</span></td><td>Giá trị extend của scheduled job</td><td>Job đầu tháng extend Singtel Expiry Date thêm bao lâu mỗi lần chạy?</td><td><span class="pill pill-done">Đã confirm</span> +5 năm/lần quét</td></tr>
+<tr class="sev-done"><td>2</td><td><span class="pill pill-critical">Critical</span></td><td>Mốc cutoff thật của AC1</td><td>AC ghi "sign up ≥ 20 Jul 2026" — mốc này có đúng là ngày cố định không?</td><td><span class="pill pill-done">Đã confirm</span> Là ngày release PROD = 30/07/2026 — <b>BA đã update chính thức trên Jira</b> (comment #26540, 06/08/2026) thành "after/before the releasing"</td></tr>
+<tr class="sev-critical"><td>15</td><td><span class="pill pill-critical">Critical</span></td><td>🆕 AC3 rewrite có được BE implement đúng chưa?</td><td>AC3 vừa đổi hoàn toàn (BA update lần 2): user mua/thêm plan mới phải convert NGAY thành AC2, không còn giữ legacy mãi mãi như AC3 bản cũ. Đây là thay đổi hành vi lớn nhất — <b>ưu tiên verify đầu tiên khi bắt đầu QC</b>, vì rất có thể BE code theo bản AC cũ nếu chưa kịp cập nhật</td><td><span class="pill pill-open">Chưa confirm</span> — verify qua TC-EP-NXL-010</td></tr>
+<tr class="sev-major"><td>16</td><td><span class="pill pill-major">Major</span></td><td>🆕 Free data có trigger AC3→AC2 convert?</td><td>AC3 viết "added new <b>data plan</b>" — không có "paid" như AC1/AC2. Free data (không mua) có kích hoạt convert không?</td><td><span class="pill pill-open">Chưa confirm</span> — xem TC-EP-NXL-023</td></tr>
+<tr class="sev-major"><td>17</td><td><span class="pill pill-major">Major</span></td><td>🆕 Lot cũ có convert theo ngay khi AC3→AC2?</td><td>Khi user AC3 convert, các lot/plan cũ (trước khi mua) có tự động thành No-Expiry ngay không (giống mechanic gốc EP-5745), hay chỉ account-level flag đổi?</td><td><span class="pill pill-open">Chưa confirm</span> — xem TC-EP-NXL-021</td></tr>
+<tr class="sev-major"><td>18</td><td><span class="pill pill-major">Major</span></td><td>🆕 Lượt mua kích hoạt convert có +5 năm ngay không?</td><td>Lượt mua khiến AC3 convert thành AC2 có được tính là "purchases an additional paid data plan" (→ +5 năm ngay), hay chỉ tính từ lượt mua kế tiếp?</td><td><span class="pill pill-open">Chưa confirm</span> — xem TC-EP-NXL-022</td></tr>
+<tr class="sev-critical"><td>3</td><td><span class="pill pill-critical">Critical</span></td><td>Chồng chéo với EP-5906</td><td>EP-5906 (đang Staging QC) cũng sửa logic của nhóm AC3 (auto-expire dựa trên Internal Expiry Date). Hai ticket có xung đột/chồng lấp không? Ticket nào deploy trước?</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr class="sev-major"><td>4</td><td><span class="pill pill-major">Major</span></td><td>Field phân nhóm AC1 vs AC2</td><td>AC1 và AC2 dùng chung 1 field <code>isNoExpiry</code>, hay tách nhánh logic độc lập theo ngày sign up so với thời điểm release?</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr class="sev-done"><td>5</td><td><span class="pill pill-major">Major</span></td><td>Phạm vi skip của AC4</td><td>"Ignore user có paused plan" — skip <b>toàn bộ user</b> (mọi plan) hay chỉ riêng <b>plan đang paused đó</b>?</td><td><span class="pill pill-done">Đã confirm</span> Skip toàn bộ plan của user, kể cả plan Active khác</td></tr>
+<tr class="sev-major"><td>6</td><td><span class="pill pill-major">Major</span></td><td>Free data plan</td><td>Rollover/extend rule của AC1–AC3 có áp dụng cho free data lot, hay chỉ paid plan như câu chữ ghi?</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr><td>7</td><td><span class="pill pill-major">Major</span></td><td>Transfer Data xuyên nhóm</td><td>Khi transfer data giữa 2 account thuộc 2 nhóm khác nhau, hành vi No-Expiry/rollover xử lý ra sao? Giả thuyết đề xuất: theo flag No-Expiry của account nhận (vì mọi user sau 01/06/2026 đã tự mark No-Expiry theo EP-5875), không cần logic transfer riêng cho EP-5887.</td><td><span class="pill pill-pending">Đang chờ xác nhận</span> (có giả thuyết)</td></tr>
+<tr class="sev-major"><td>8</td><td><span class="pill pill-major">Major</span></td><td>Migration dữ liệu cũ</td><td>Các plan đã tồn tại trước ngày deploy có được backfill lại theo logic mới, hay chỉ áp dụng từ thời điểm deploy trở đi (prospective only)?</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr class="sev-done"><td>9</td><td><span class="pill pill-major">Major</span></td><td>Cơ chế cũ "+3 năm khi activate" ở AC1</td><td>Cơ chế cũ bị loại bỏ cho AC1 chỉ áp dụng khi "mua thêm", hay cho cả lần activate đầu tiên?</td><td><span class="pill pill-done">Đã confirm</span> Bỏ hoàn toàn, tính từ lần activate đầu tiên</td></tr>
+<tr class="sev-done"><td>10</td><td><span class="pill pill-major">Major</span></td><td>Internal Expiry Date vs No-Expiry</td><td>"Không có Internal Expiry Date" có đồng nghĩa "No-Expiry = true" không?</td><td><span class="pill pill-done">Đã confirm</span> KHÔNG đồng nghĩa — 2 trạng thái khác nhau, cần test riêng (rủi ro implement sai bằng NULL-check)</td></tr>
+<tr class="sev-minor"><td>11</td><td><span class="pill pill-minor">Minor</span></td><td>Cơ chế "paused"</td><td>Trạng thái Paused ở mức data plan được set qua đâu? (WBS chỉ có <code>suspend-esim</code> ở mức eSIM, không có endpoint pause/resume ở mức plan)</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr class="sev-minor"><td>12</td><td><span class="pill pill-minor">Minor</span></td><td>Trigger job trên STG</td><td>Không có API public để trigger scheduled job đầu tháng thủ công trên Staging — cần BE hỗ trợ cách nào?</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr class="sev-minor"><td>13</td><td><span class="pill pill-minor">Minor</span></td><td>Timezone mốc release PROD</td><td>Thời điểm release PROD 30/07/2026 tính theo giờ/timezone nào (UTC / SGT)? Ảnh hưởng test boundary user sign-up đúng thời điểm.</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+<tr class="sev-major"><td>14</td><td><span class="pill pill-major">Major</span></td><td>Race condition cộng dồn extend (nâng mức độ)</td><td>User AC2 sắp hết hạn (≤32 ngày) mua thêm plan đúng lúc job đầu tháng cũng xử lý account này — có bị cộng dồn thành +10 năm không? <b>Đây là hành vi khách hàng điển hình ("sắp hết hạn thì mua thêm"), không phải case lý thuyết</b> — đã tách thành test case riêng TC-EP-NXL-020</td><td><span class="pill pill-open">Chưa confirm</span></td></tr>
+</tbody>
+</table>
+
+<h2>4. Đánh giá tần suất xảy ra thực tế của từng test case</h2>
+<table>
+<thead>
+<tr><th style="width:8%">Mức độ</th><th style="width:14%">TC liên quan</th><th style="width:78%">Đánh giá</th></tr>
+</thead>
+<tbody>
+<tr><td class="yes">🟢 Cao</td><td>001, 002, 006–008, 016, 017</td><td>Xảy ra hàng ngày với user/account có sẵn — test được ngay, không cần seed data</td></tr>
+<tr><td class="yes">🟢 Cao (bị đánh giá thấp ban đầu)</td><td>019</td><td>"Thiếu Internal Expiry Date" là trạng thái <b>mặc định của mọi plan AC3 mới mua, chưa dùng</b> — không phải case hiếm. Nếu BE sai sẽ ảnh hưởng diện rộng ngay từ đầu, nên coi như sanity check bắt buộc</td></tr>
+<tr class="sev-critical"><td class="yes">🟢🆕 Có thể là case phổ biến NHẤT toàn ticket</td><td>010, 021, 022, 024</td><td>Sau BA update AC3 lần 2: <b>mọi existing user mua bất kỳ thứ gì đều trigger convert</b> — không phải edge case, là hành vi mặc định của toàn bộ user cũ mỗi khi họ mua hàng. Ưu tiên test đầu tiên</td></tr>
+<tr><td class="yes">🟢 Vẫn còn nhiều account thật ở trạng thái tạm này</td><td>011</td><td>Release mới 7 ngày, còn rất nhiều user cũ chưa mua gì mới — dễ tìm, nhưng cần chọn account KHÁC với account dùng cho TC-010 (vì TC-010 sẽ tiêu account đó)</td></tr>
+<tr><td class="warn">🟡🆕 Ambiguity thật, cần dữ liệu đặc biệt</td><td>023</td><td>Cần tìm/tạo được case AC3 user nhận free data (không phải mua) để biết free data có trigger convert hay không</td></tr>
+<tr><td class="warn">🟡 Có thật, cần backdate mới bắt kịp lịch test</td><td>004, 009</td><td>Account AC1 (mới 7 ngày) / AC2 (vừa +5 năm) hiện có hạn Singtel còn rất xa — cần BE backdate mới tạo được cửa sổ ≤32 ngày sớm</td></tr>
+<tr><td class="yes">🟢 Là trạng thái mặc định hiện tại</td><td>005</td><td>Vì hạn còn xa, đây chính là trạng thái tự nhiên của hầu hết account bây giờ — dễ test hơn cả 004/009</td></tr>
+<tr><td class="warn">🟡 Có user thật trong DB, nên tìm thay vì seed giả</td><td>012</td><td>Release đã qua 7 ngày — user đăng ký đúng lúc đó đã tồn tại thật, nên nhờ BE query thay vì tạo account giả</td></tr>
+<tr><td class="warn">🟡 Hành vi hợp lý nhưng cần set đúng thời điểm</td><td>013, 015</td><td>Pause là hành vi user thật có thể làm (VD tạm dừng khi đi công tác), nhưng để rơi đúng lúc job chạy cần chủ động set</td></tr>
+<tr><td class="warn">🟡 Hành vi khách hàng điển hình, ưu tiên cao hơn ban đầu</td><td>020</td><td>"Sắp hết hạn thì mua thêm" là tâm lý mua hàng phổ biến, không phải case lý thuyết — kết hợp setup của TC-009 rồi mua thêm ngay lúc job chạy</td></tr>
+<tr><td>🔴 Hiếm gặp tự nhiên</td><td>003, 014</td><td>Mua liên tiếp nhiều lần/ngày, hoặc vừa Paused vừa Active đúng lúc job chạy — tổ hợp đặc thù, phải dựng state chủ động</td></tr>
+<tr><td>⚪ Không phải case — là câu hỏi thiết kế</td><td>018</td><td>Cần câu trả lời BA/Dev trước, chưa test được</td></tr>
+</tbody>
+</table>
+<div class="note">Khuyến nghị thứ tự chuẩn bị: làm nhóm 🟢 trước (không tốn công, <b>đặc biệt ưu tiên nhóm AC3→AC2 convert vì đây là thay đổi hành vi lớn nhất</b>) → đầu tư backdate/seed cho nhóm 🟡 → nhóm 🔴 để cuối vì ít ảnh hưởng số đông user thật.</div>
+
+<div class="note">Tài liệu này tổng hợp từ nội dung AC gốc của EP-5887 + đối chiếu chuỗi ticket EP-5745 / EP-5875 / EP-5906 + các điểm đã confirm với Dev ngày 06/08/2026 + bản BA update AC lần 2 (comment #26540). Xem chi tiết 24 test case tương ứng tại <b>TC_EP-5887_No_Expiry_Logic.md</b>.</div>
+
+<div class="footer">Eskimo Portals — QC Documentation · EP-5887 · Được tạo bởi Nhu Huynh · Cập nhật lần 5: 2026-08-06</div>
+
+</body>
+</html>

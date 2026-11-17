@@ -1,0 +1,1165 @@
+{
+  "info": {
+    "name": "EP-6011 External API (Account Management + View Data Wallet) - API Test Cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "", "description": "STG base URL for external-api-adapter. PROD is https://api.eskimo.travel - confirm STG equivalent with dev (Hoang Nguyen) before running." },
+    { "key": "appId", "value": "", "description": "Partner AppID (GUID / partnerId). Get from Admin Portal > Partnership > Partners > (a Corporate partner with an active admin) > Partner API Management." },
+    { "key": "apiKey", "value": "", "description": "Partner APIKey (HMAC secret). From Admin Portal > Partner API Management > Change secret key / view key." },
+    { "key": "timestamp", "value": "", "description": "Auto-set by collection pre-request script." },
+    { "key": "signature", "value": "", "description": "Auto-set by collection pre-request script." },
+    { "key": "existingAccountId", "value": "", "description": "A known accountId already created under this partner (fill in after running CREATE_TC01, or use a pre-existing test worker)." },
+    { "key": "existingAccountEmail", "value": "", "description": "Email of existingAccountId." },
+    { "key": "existingAccountIccid", "value": "", "description": "ICCID/esim id of existingAccountId (only if it has an eSIM)." },
+    { "key": "accountIdWithEsim", "value": "", "description": "AC1 precondition: accountId that already has an active data plan/eSIM assigned (needed to see a populated esimInstallation)." },
+    { "key": "accountIdNoEsim", "value": "", "description": "AC1 precondition: accountId with no data plan/eSIM assigned (needed to see esimInstallation = null)." },
+    { "key": "nonCorporatePartnerAppId", "value": "", "description": "AUTH_TC07: AppID of a partner that is not corporate-type." },
+    { "key": "corporatePartnerNoAdminAppId", "value": "", "description": "AUTH_TC08: AppID of a corporate partner with no active owner/admin." }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Computes Timestamp + Signature for every request in this collection.",
+          "// Signature = Base64( HMAC_SHA256(AppID + APIKey + Timestamp) ), APIKey as HMAC secret.",
+          "const appId = pm.collectionVariables.get('appId') || '';",
+          "const apiKey = pm.collectionVariables.get('apiKey') || '';",
+          "const timestamp = Math.floor(Date.now() / 1000).toString();",
+          "const message = appId + apiKey + timestamp;",
+          "const hash = CryptoJS.HmacSHA256(message, apiKey);",
+          "const signature = CryptoJS.enc.Base64.stringify(hash);",
+          "pm.collectionVariables.set('timestamp', timestamp);",
+          "pm.collectionVariables.set('signature', signature);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication (shared - applies to all endpoints)",
+      "item": [
+        {
+          "name": "AUTH_TC01 - Missing AppID header",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "// <cần confirm> exact message/code (EXT_PARTNER_MISSING vs generic \"Missing required field(s).\")"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC02 - Missing Timestamp header",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"Message matches doc\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Missing required field(s).\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC03 - Missing Signature header",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"Message matches doc\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Missing required field(s).\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC04 - Invalid Signature (does not match)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "AAAAinvalidSignatureAAAA==" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "// <cần confirm> exact error message text"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC05 - AppID is not a valid GUID",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "not-a-guid" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_PARTNER_ID_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_PARTNER_ID_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC06 - AppID valid GUID, no matching corporate partner",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "00000000-0000-0000-0000-000000000000" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_PARTNER_NOT_FOUND\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_PARTNER_NOT_FOUND\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC07 - Partner is not corporate-type",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{nonCorporatePartnerAppId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_PARTNER_NOT_CORPORATE\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_PARTNER_NOT_CORPORATE\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC08 - Corporate partner has no active admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{corporatePartnerNoAdminAppId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_PARTNER_NO_ACTIVE_ADMIN\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_PARTNER_NO_ACTIVE_ADMIN\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC09 - Timestamp older than 5 minutes",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{expiredTimestamp}}" },
+              { "key": "Signature", "value": "{{expiredSignature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Overrides collection timestamp/signature with one 400s (>5min) in the past.",
+              "const appId = pm.collectionVariables.get('appId') || '';",
+              "const apiKey = pm.collectionVariables.get('apiKey') || '';",
+              "const expiredTimestamp = (Math.floor(Date.now() / 1000) - 400).toString();",
+              "const message = appId + apiKey + expiredTimestamp;",
+              "const hash = CryptoJS.HmacSHA256(message, apiKey);",
+              "const expiredSignature = CryptoJS.enc.Base64.stringify(hash);",
+              "pm.collectionVariables.set('expiredTimestamp', expiredTimestamp);",
+              "pm.collectionVariables.set('expiredSignature', expiredSignature);"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> doc does not document the exact status/message for an expired timestamp.",
+              "console.log('Response status: ' + pm.response.code);"
+            ] } }
+          ]
+        },
+        {
+          "name": "AUTH_TC10 - Rate limit exceeded (101st request in 1 minute)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// Run this request 101 times within 60s (e.g. Postman Collection Runner, 101 iterations, 0 delay) to trigger this.",
+              "pm.test(\"Status code is 429\", function () {",
+              "    pm.response.to.have.status(429);",
+              "});",
+              "pm.test(\"Message matches doc\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"Rate limit exceeded. Please wait 1 minute before trying again.\");",
+              "});"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Create Account",
+      "item": [
+        {
+          "name": "CREATE_TC01 - Happy path - valid unique email",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"{{$randomEmail}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm exact status code>",
+              "pm.test(\"isSuccess is true\", function () {",
+              "    pm.expect(pm.response.json().isSuccess).to.eql(true);",
+              "});",
+              "if (pm.response.json().isSuccess) {",
+              "    pm.collectionVariables.set('existingAccountId', pm.response.json().data.accountId);",
+              "    pm.collectionVariables.set('existingAccountEmail', pm.response.json().data.accountEmail);",
+              "}"
+            ] } }
+          ]
+        },
+        {
+          "name": "CREATE_TC02 - Missing accountEmail field",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_EMAIL_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_EMAIL_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "CREATE_TC03 - accountEmail invalid format",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"not-an-email\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_EMAIL_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_EMAIL_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "CREATE_TC04 - accountEmail exceeds 200 chars",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_EMAIL_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_EMAIL_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "CREATE_TC05 - Duplicate accountEmail (same partner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"{{existingAccountEmail}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> no dedicated duplicate-email error code documented for this endpoint.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        },
+        {
+          "name": "CREATE_TC06 - accountEmail at 200-char boundary (valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@ab.co\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm exact status code>",
+              "pm.test(\"isSuccess is true\", function () {",
+              "    pm.expect(pm.response.json().isSuccess).to.eql(true);",
+              "});"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Edit Account Email",
+      "item": [
+        {
+          "name": "EDIT_TC01 - Happy path - edit to new unique email",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{existingAccountId}}\",\n  \"accountEmail\": \"{{$randomEmail}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm exact status code>",
+              "pm.test(\"isSuccess is true\", function () {",
+              "    pm.expect(pm.response.json().isSuccess).to.eql(true);",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "EDIT_TC02 - Missing accountId field",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"user@partner.com\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_ID_REQUIRED\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_ID_REQUIRED\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "EDIT_TC03 - Missing accountEmail field",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{existingAccountId}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_EMAIL_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_EMAIL_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "EDIT_TC04 - accountEmail exceeds 200 chars",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{existingAccountId}}\",\n  \"accountEmail\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_EMAIL_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_EMAIL_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "EDIT_TC05 - accountId does not exist",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"00000000-0000-0000-0000-000000000000\",\n  \"accountEmail\": \"user@partner.com\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> doc has no explicit \"not found\" code for this endpoint, only generic EXT_UPDATE_WORKER_FAILED.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        },
+        {
+          "name": "EDIT_TC06 - accountEmail already used by another account",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{existingAccountId}}\",\n  \"accountEmail\": \"<email already used by a different account>\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> no dedicated duplicate-email error code documented for this endpoint.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Suspend Account",
+      "item": [
+        {
+          "name": "SUSPEND_TC01 - Happy path - suspend existing active account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/{{existingAccountId}}", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "{{existingAccountId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"isSuccess is true\", function () {",
+              "    pm.expect(pm.response.json().isSuccess).to.eql(true);",
+              "});",
+              "pm.test(\"Message matches doc\", function () {",
+              "    pm.expect(pm.response.json().messages[0].content).to.include(\"Suspension account success\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SUSPEND_TC02 - accountId path segment empty",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", ""] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> doc maps this to EXT_PARTNER_IDS_REQUIRED / \"partnerIds is required.\" - naming looks inconsistent, confirm with dev.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        },
+        {
+          "name": "SUSPEND_TC03 - accountId does not exist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "00000000-0000-0000-0000-000000000000"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_DELETE_WORKER_FAILED\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_DELETE_WORKER_FAILED\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SUSPEND_TC04 - Suspend an already-suspended account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/{{existingAccountId}}", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "{{existingAccountId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> run only after SUSPEND_TC01 - behavior for re-suspending is not documented.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Search Account",
+      "item": [
+        {
+          "name": "SEARCH_TC01 - Happy path - no filters, default pagination",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 1,\n  \"pageSize\": 25\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"isSuccess is true\", function () {",
+              "    pm.expect(pm.response.json().isSuccess).to.eql(true);",
+              "});",
+              "pm.test(\"data.data is an array\", function () {",
+              "    pm.expect(pm.response.json().data.data).to.be.an('array');",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC02 - Search by accountId only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{existingAccountId}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Returned account matches accountId filter\", function () {",
+              "    pm.expect(pm.response.json().data.data[0].accountId).to.eql(pm.collectionVariables.get('existingAccountId'));",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC03 - Search by accountEmail only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountEmail\": \"{{existingAccountEmail}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"data.data is not empty\", function () {",
+              "    pm.expect(pm.response.json().data.data.length).to.be.above(0);",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC04 - Search by accountIccid only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountIccid\": \"{{existingAccountIccid}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"data.data is not empty\", function () {",
+              "    pm.expect(pm.response.json().data.data.length).to.be.above(0);",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC05 - No matches for non-existent accountId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"00000000-0000-0000-0000-000000000000\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> doc does not explicitly state empty-result behavior vs. an error for a search with zero matches.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC06 - pageSize=0 / pageIndex=0 boundary",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pageIndex\": 0,\n  \"pageSize\": 0\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm> no documented validation/constraint for pageIndex/pageSize.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC07 (AC1) - Account WITH active eSIM - esimInstallation populated",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const acc = pm.response.json().data.data[0];",
+              "pm.test(\"esimInstallation is present\", function () {",
+              "    pm.expect(acc.esimInstallation).to.not.be.null;",
+              "});",
+              "pm.test(\"esimInstallation has all AC1 fields populated\", function () {",
+              "    pm.expect(acc.esimInstallation.smdpAddress).to.be.a('string').and.not.empty;",
+              "    pm.expect(acc.esimInstallation.activationCode).to.be.a('string').and.not.empty;",
+              "    pm.expect(acc.esimInstallation.lpaString).to.be.a('string').and.not.empty;",
+              "    pm.expect(acc.esimInstallation.iosInstallUrl).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test(\"lpaString format matches LPA:1$<smdpAddress>$<activationCode>\", function () {",
+              "    pm.expect(acc.esimInstallation.lpaString).to.eql(",
+              "        'LPA:1$' + acc.esimInstallation.smdpAddress + '$' + acc.esimInstallation.activationCode",
+              "    );",
+              "});",
+              "pm.test(\"iosInstallUrl points to esimsetup.apple.com\", function () {",
+              "    pm.expect(acc.esimInstallation.iosInstallUrl).to.include('esimsetup.apple.com');",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "SEARCH_TC08 (AC1) - Account with NO eSIM - esimInstallation is null",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdNoEsim}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/users/search", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "users", "search"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"esimInstallation is null\", function () {",
+              "    pm.expect(pm.response.json().data.data[0].esimInstallation).to.be.null;",
+              "});"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "View Data Wallet",
+      "item": [
+        {
+          "name": "WALLET_TC01 - Happy path - accountId only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"isSuccess is true\", function () {",
+              "    pm.expect(pm.response.json().isSuccess).to.eql(true);",
+              "});",
+              "pm.test(\"data.data is an array\", function () {",
+              "    pm.expect(pm.response.json().data.data).to.be.an('array');",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC02 - Missing accountId field",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ACCOUNT_ID_REQUIRED\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ACCOUNT_ID_REQUIRED\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC03 - accountId does not exist",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"00000000-0000-0000-0000-000000000000\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_WORKER_NOT_FOUND\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_WORKER_NOT_FOUND\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC04 - Filter by status=2 (USED)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\",\n  \"status\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"All returned plans have status=2\", function () {",
+              "    pm.response.json().data.data.forEach(p => pm.expect(p.status).to.eql(2));",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC05 - Filter by status=3 (USED_UP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\",\n  \"status\": 3\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"All returned plans have status=3\", function () {",
+              "    pm.response.json().data.data.forEach(p => pm.expect(p.status).to.eql(3));",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC06 - Filter by status=4 (CANCELED)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\",\n  \"status\": 4\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"All returned plans have status=4\", function () {",
+              "    pm.response.json().data.data.forEach(p => pm.expect(p.status).to.eql(4));",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC07 - Invalid status filter value",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\",\n  \"status\": 99\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_STATUS_FILTER_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_STATUS_FILTER_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC08 - searchPlanId not a valid GUID",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\",\n  \"searchPlanId\": \"not-a-guid\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_SEARCH_PLAN_ID_INVALID\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_SEARCH_PLAN_ID_INVALID\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC09 - Account has no active data plan yet",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdNoEsim}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_DATA_PLAN_NOT_FOUND\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_DATA_PLAN_NOT_FOUND\");",
+              "});"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC10 (AC1) - Account WITH eSIM - esimInstallation matches Search Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdWithEsim}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const esim = pm.response.json().data.esimInstallation;",
+              "pm.test(\"esimInstallation is present at top level of data\", function () {",
+              "    pm.expect(esim).to.not.be.null;",
+              "});",
+              "pm.test(\"esimInstallation has all AC1 fields populated\", function () {",
+              "    pm.expect(esim.smdpAddress).to.be.a('string').and.not.empty;",
+              "    pm.expect(esim.activationCode).to.be.a('string').and.not.empty;",
+              "    pm.expect(esim.lpaString).to.be.a('string').and.not.empty;",
+              "    pm.expect(esim.iosInstallUrl).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test(\"lpaString format matches LPA:1$<smdpAddress>$<activationCode>\", function () {",
+              "    pm.expect(esim.lpaString).to.eql('LPA:1$' + esim.smdpAddress + '$' + esim.activationCode);",
+              "});",
+              "// Run Search Account SEARCH_TC07 first against the SAME accountIdWithEsim, then compare manually",
+              "// or store its esimInstallation in a variable there and assert equality here for full AC1 cross-check."
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC11 (AC1) - Account with NO eSIM - esimInstallation is null",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountIdNoEsim}}\",\n  \"status\": null\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// Note: WALLET_TC09 documents this exact precondition as EXT_DATA_PLAN_NOT_FOUND (400).",
+              "// <cần confirm with dev> whether esimInstallation=null is ever independently observable here,",
+              "// or whether \"no data plan\" always short-circuits to the 400 error before esimInstallation is evaluated.",
+              "console.log('Response body: ' + pm.response.text());"
+            ] } }
+          ]
+        },
+        {
+          "name": "WALLET_TC12 - eSIM carrier query fails",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "AppID", "value": "{{appId}}" },
+              { "key": "Timestamp", "value": "{{timestamp}}" },
+              { "key": "Signature", "value": "{{signature}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"<accountId whose carrier query is forced to fail>\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/external-api-adapter/esim/data-wallet", "host": ["{{baseUrl}}"], "path": ["api", "external-api-adapter", "esim", "data-wallet"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// <cần confirm reproduction method> - ask dev how to force a carrier/network failure on STG.",
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"code is EXT_ESIM_QUERY_FAILED\", function () {",
+              "    pm.expect(pm.response.json().code).to.eql(\"EXT_ESIM_QUERY_FAILED\");",
+              "});"
+            ] } }
+          ]
+        }
+      ]
+    }
+  ]
+}

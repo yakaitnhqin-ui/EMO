@@ -1,0 +1,39 @@
+Key,Status,Group,Summary,v3.1 Reference,Other Reference
+EP-5947,In Progress,Pricing,Add currency pricing & first purchase pricing,"Partial - Sec 5.1 (prices multi-currency); firstPurchasePromo NOT in v3.1",https://docs.google.com/document/d/1FEosf0fHxURrI6vxhzasyOplw7pBssLU6YrhaciqLG0/edit?tab=t.0
+EP-5948,To Do,Pricing,(Sub-task of EP-5947),—,Follows EP-5947 - no doc yet
+EP-5733,Done,Pricing,Support GBP/EUR/AUD/CAD pricing,Sec 5.1 (prices field),—
+EP-4147,Done,Voucher,Generate Voucher - Auth + Validation,"Sec 3 (Auth), Sec 4 (Rate limit), Sec 8.1",—
+EP-4152,Done,Voucher,(Sub-task of EP-4147),Sec 8.1,Follows EP-4147
+EP-4164,Done,Voucher,Generate voucher - remove start/end date,Sec 8.1 (constraint),—
+EP-4165,Done,Voucher,(Sub-task of EP-4164),Sec 8.1,Follows EP-4164
+EP-4177,Done,Voucher,Search vouchers,Sec 8.3,https://docs.google.com/document/d/1XJDzjurVlfcU4VDMrNM9Dlsqjm785D19jHuh1RF-Hxg/edit?tab=t.0
+EP-4179,Done,Voucher,(Sub-task of EP-4177),Sec 8.3,Follows EP-4177
+EP-4178,Done,Voucher,Refund voucher,Sec 8.2,https://docs.google.com/document/d/1XJDzjurVlfcU4VDMrNM9Dlsqjm785D19jHuh1RF-Hxg/edit?tab=t.0
+EP-4204,Done,Voucher,(Sub-task of EP-4178),Sec 8.2,Follows EP-4178
+EP-5550,Done,Voucher,Voucher generation,Sec 8.1 (general),https://docs.google.com/document/d/14tbyF1xZsE0NMy_q7WO4_FxRe1zlEERRt6TUZkbA6EA/edit?tab=t.0
+EP-5621,Done,Voucher,(Sub-task of EP-5550),Sec 8.1,Follows EP-5550
+EP-5662,Done,Voucher,Generate Unique gift code,"Sec 8.4 (request fields; response schema TBD)",https://docs.google.com/document/d/1ox4O6sH8Ox8Fm0Y9IM7Y7z1sQ_XOJdXKmPbwa6fjBLA/edit?tab=t.0
+EP-1090,Done,Voucher,Partner: Voucher API (general),Sec 8.1 (general),—
+EP-1229,Done,Voucher,Bug: Buy voucher fail,"Internal bug, not an API spec - do not send to BD",—
+EP-4131,Done,Data Plan,esimdb api (base endpoint),Sec 5.1 (base endpoint),—
+EP-4159,Done,Data Plan,Data plan listing (duplicate esimdb),Sec 5.1,—
+EP-4161,Done,Data Plan,(Sub-task of EP-4159),Sec 5.1,Follows EP-4159
+EP-4174,Done,Data Plan,Add data plan url (dataURL),Sec 5.1 (dataURL field),—
+EP-4175,Done,Data Plan,(Sub-task of EP-4174),Sec 5.1,Follows EP-4174
+EP-4447,Done,Data Plan,Unlimited plan spec (dataCap/dataCapPer),"Sec 5.1; reducedSpeed field NOT in v3.1 field table",—
+EP-4559,Done,Data Plan,(Sub-task of EP-4447),Sec 5.1,Follows EP-4447
+EP-5016,Done,Data Plan,"Refactor - add aff_id, firstPurchasePrice","Sec 5.1 (dataURL aff_id); firstPurchasePromo NOT in v3.1",https://docs.google.com/document/d/1FEosf0fHxURrI6vxhzasyOplw7pBssLU6YrhaciqLG0/edit?tab=t.0
+EP-5048,Done,Data Plan,(Sub-task of EP-5016),—,Follows EP-5016
+EP-5091,Done,Data Plan,Add filter (coverageType/coverageCode/planType),Sec 5.1 (query params),https://docs.google.com/document/d/1FEosf0fHxURrI6vxhzasyOplw7pBssLU6YrhaciqLG0/edit?tab=t.0#heading=h.1wy32ocqjug5
+EP-5444,Done,Data Plan,Add planid into data plan listing API,Sec 5.1 (planId),https://docs.google.com/document/d/1FEosf0fHxURrI6vxhzasyOplw7pBssLU6YrhaciqLG0/edit?tab=t.0
+EP-5732,Done,Data Plan,Update Unlimited Plan Daily Cap (1GB to 3GB),Sec 5.1 (callout 3GB/day),—
+EP-5438,Done,Account/Wallet,Top up account esim API,Sec 7.1,https://docs.google.com/document/d/1Xgoikloncd9jL6JIKxBdig7hQzxeQObvbe4GHwXWGFs/edit?tab=t.0
+EP-5453,Done,Account/Wallet,Data wallet API,Sec 7.2,https://docs.google.com/document/d/14NCRu9c6acljM3MYtPOxZYBpvXihZoPfcc6KXZAMNGo/edit?tab=t.0#heading=h.x1j4bimfblqy
+EP-5471,Done,Account/Wallet,Account management APIs (Create/Edit/Suspend/Search),Sec 6.1-6.4,https://docs.google.com/document/d/1ox4O6sH8Ox8Fm0Y9IM7Y7z1sQ_XOJdXKmPbwa6fjBLA/edit?tab=t.0
+EP-5493,Done,Account/Wallet,Add global/regional category (planFilter),Sec 5.1 (planFilter),https://docs.google.com/document/d/1FEosf0fHxURrI6vxhzasyOplw7pBssLU6YrhaciqLG0/edit?tab=t.0#heading=h.1wy32ocqjug5
+EP-323,Done,Management,Partner: Partner API management (App ID/Secret Key UI),"Sec 1.2 (Credentials) - UI feature, not an API endpoint",—
+EP-1134,Done,Management,Admin: Manage External API (enable/disable),"Admin Portal UI feature, not a partner API endpoint - do not send to BD",—
+EP-1136,To Do,Management,External APIs document (ticket to write docs),—,Not available - ticket itself still To Do
+EP-4001,To Do,Management,IP Whitelist,—,Not available - no AC yet
+EP-4969,Done,Management,Network Affiliate program (Partnership module),"Partnership UI feature, not an External API - out of scope for this doc",—
+EP-5725,To Do,Management,Webhooks,—,Not available - no AC yet

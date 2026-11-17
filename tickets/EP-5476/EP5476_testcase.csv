@@ -1,0 +1,738 @@
+﻿"ID","Description","Method","Payload","Expected result"
+"EP5476_TC01","Happy path - lấy dữ liệu Recurring Data Sale không group by, token hợp lệ","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK. Response: {""isSuccess"":true,""messages"":[{""content"":""Successfully"",""type"":0}],""data"":[{""dataSource"":""recurring-data-sale"",""tittle"":""Recurring Data Sale"",""numOfRecords"":1,""numOfPages"":1,""pageIndex"":1,""data"":[{""groupByValue"":""Total"",""details"":[],""comparisionsValues"":[<số thực>]}]}]}
+
+[VERIFY 2026-07-03] Đã verify trực tiếp trên STG 2026-07-03 (gọi API thật bằng token hợp lệ). Lưu ý: field tên thật là ""tittle"" và ""comparisionsValues"" (có trong response gốc của BE, không phải lỗi test case)."
+"EP5476_TC02","Happy path - lấy dữ liệu Recurring Data Sale, group by Country","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [
+        ""Country""
+      ],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK, data được nhóm theo Country, mỗi phần tử có groupByValue = tên quốc gia (vd ""Vietnam"", ""Singapore"") và comparisionsValues = doanh thu tương ứng. Đã verify thực tế trả 33 records / 4 pages trên STG.
+
+[VERIFY 2026-07-03] Đã verify trên STG. XEM THÊM: phát hiện 1 groupByValue = """" (rỗng) trong kết quả thực tế — xem TC32."
+"EP5476_TC03","Không gửi header Authorization","POST /api/dashboard/group-by-view","(không gửi header Authorization)
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","401 Unauthorized, response body RỖNG (không có JSON, không có message)
+
+[VERIFY 2026-07-03] Đã verify trên STG: status 401, body = """" (rỗng). KHÁC với giả định ban đầu (""No access token provided."") — API không trả message cho case này."
+"EP5476_TC04","Token sai cấu trúc (không đủ 3 phần JWT / chuỗi rác)","POST /api/dashboard/group-by-view","Authorization: Bearer invalidtoken
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","401 Unauthorized. Response: {""isSuccess"":false,""detail"":""Unauthorized access! It appears that you don't have permission to access this content"",""data"":null}
+
+[VERIFY 2026-07-03] Đã verify trên STG với token rác ""invalidtoken"" (dùng đại diện). API dùng 1 message chung cho mọi token không hợp lệ, KHÔNG phân biệt ""Invalid token structure"" như checklist chung."
+"EP5476_TC05","Token sai chữ ký (signature bị sửa, không khớp)","POST /api/dashboard/group-by-view","Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.tamperedsignature
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","401 Unauthorized. Response: {""isSuccess"":false,""detail"":""Unauthorized access! It appears that you don't have permission to access this content"",""data"":null}
+
+[VERIFY 2026-07-03] Suy ra từ hành vi chung đã verify (mọi token có prefix Bearer nhưng invalid đều trả cùng 1 message) — chưa test riêng bằng token có signature bị sửa thủ công từ token thật."
+"EP5476_TC06","Token payload không hợp lệ (thiếu claim exp)","POST /api/dashboard/group-by-view","Authorization: Bearer {{tokenMissingExp}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","<cần confirm> - dự đoán 401 cùng message chung ""Unauthorized access!..."" theo pattern đã verify, nhưng CHƯA tạo được token thật thiếu claim exp để test trực tiếp"
+"EP5476_TC07","Token đã hết hạn (exp đã qua)","POST /api/dashboard/group-by-view","Authorization: Bearer {{expiredAccessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","<cần confirm> - dự đoán 401 cùng message chung theo pattern đã verify, nhưng CHƯA có token hết hạn thật để test (không thể giả lập nhanh trong phiên này)"
+"EP5476_TC08","Sai loại token - dùng refresh token thay cho access token","POST /api/dashboard/group-by-view","Authorization: Bearer {{refreshToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK — hệ thống CHẤP NHẬN refresh token thay cho access token và trả dữ liệu bình thường, KHÔNG trả 401 như kỳ vọng chuẩn bảo mật (không phân biệt loại token).
+
+[VERIFY 2026-07-03] Đã verify trên STG: dùng refreshToken thật trong localStorage thay accessToken → API trả 200 với data đầy đủ. Đây là phát hiện đáng chú ý (xem phần bug/finding trong báo cáo), không phải lỗi của riêng ticket EP-5476 mà là hành vi chung của middleware auth toàn hệ thống."
+"EP5476_TC09","Token hợp lệ nhưng user trong token đã bị xóa","POST /api/dashboard/group-by-view","Authorization: Bearer {{deletedUserToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","<cần confirm> - không có sẵn tài khoản test đã bị xóa để lấy token, chưa thể verify trực tiếp"
+"EP5476_TC10","Token đã bị thu hồi / tái sử dụng sau khi logout","POST /api/dashboard/group-by-view","Authorization: Bearer {{revokedToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","<cần confirm> - chưa thể verify trực tiếp trong phiên này (cần logout rồi tái sử dụng token cũ)"
+"EP5476_TC11","Bearer token để trống","POST /api/dashboard/group-by-view","Authorization: Bearer 
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","401 Unauthorized. Response: {""isSuccess"":false,""detail"":""Unauthorized access! It appears that you don't have permission to access this content"",""data"":null}
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC12","Sai scheme - header thiếu tiền tố Bearer","POST /api/dashboard/group-by-view","Authorization: {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","401 Unauthorized, response body RỖNG (không có JSON) — giống case thiếu hẳn header Authorization
+
+[VERIFY 2026-07-03] Đã verify trên STG: dùng access token thật nhưng bỏ tiền tố ""Bearer "" → 401, body rỗng."
+"EP5476_TC13","Token hợp lệ nhưng role không có quyền truy cập endpoint dashboard","POST /api/dashboard/group-by-view","Authorization: Bearer {{lowPrivilegeToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","<cần confirm> - không có sẵn tài khoản Partner/role thấp hơn để test trong phiên này; endpoint /api/dashboard/group-by-view dùng chung path cho cả Admin & Partner Portal theo WBS nên CÓ THỂ không phân quyền role riêng ở tầng này (permission có thể áp ở tầng data thay vì chặn 403)"
+"EP5476_TC14","Thiếu trường itemRequests (bắt buộc)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK, ""data"": [] (KHÔNG phải 400 như thường lệ REST convention) — backend không validate itemRequests là bắt buộc, chỉ trả rỗng.
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC15","itemRequests là mảng rỗng","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK, ""data"": []
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC16","Thiếu trường dataSource trong itemRequest","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","400 Bad Request. Response: {""isSuccess"":false,""messages"":""Validator failed"",""errors"":[{""field"":""ItemRequests[0].DataSource"",""errorMessage"":[{""exception"":null,""errorMessage"":""The DataSource field is required.""}]}]}
+
+[VERIFY 2026-07-03] Đã verify trên STG — đây là field bắt buộc thật sự duy nhất được validate rõ ràng trong itemRequests."
+"EP5476_TC17","dataSource không tồn tại / sai giá trị","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""invalid-data-source"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK, ""data"": [] (không có lỗi 400, dataSource sai chỉ trả rỗng, không có cảnh báo cho FE biết dataSource không tồn tại)
+
+[VERIFY 2026-07-03] Đã verify trên STG. Danh sách dataSource hợp lệ đầy đủ (lấy từ GET /api/dashboard/metric-items-available): activity-pending, activity-useapp, activity-signup, activity-get-paid-plan, activity-assignesim, activity-transfer-data, data-sales, booking-cashback, recurring-data-sale, commission-earned, data-usage, signup-conversion-rate, referral-total, referral-ltv, referral-coefficient."
+"EP5476_TC18","filters.country có giá trị hợp lệ (lọc theo quốc gia)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": [
+          ""Vietnam""
+        ]
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK, trả về doanh thu Recurring Data Sale chỉ tính riêng Vietnam (khớp đúng con số của groupByValue=""Vietnam"" khi group by Country).
+
+[VERIFY 2026-07-03] Đã verify trên STG: filters.country = [""Vietnam""] → comparisionsValues khớp chính xác với dòng ""Vietnam"" trong TC02. QUAN TRỌNG: filters.country là MẢNG chuỗi TÊN QUỐC GIA ĐẦY ĐỦ (vd ""Vietnam""), KHÔNG phải mã ISO (""VN"") và KHÔNG phải string đơn — khác với ví dụ payload ban đầu BE cung cấp (filters:{country:null} không thể hiện rõ kiểu dữ liệu khi có giá trị thật)."
+"EP5476_TC19","filters.country sai kiểu dữ liệu (string đơn ""VN"" thay vì mảng)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": ""VN""
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","400 Bad Request. Response: {""isSuccess"":false,""messages"":""Validator failed"",""errors"":[{""field"":""request"",""errorMessage"":[{""errorMessage"":""The request field is required.""}]},{""field"":""itemRequests[0].filters.country"",""errorMessage"":[{""errorMessage"":""Error converting value \""VN\"" to type 'System.Collections.Generic.List`1[System.String]'...""}]}]}
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC20","groupBys chứa giá trị không hợp lệ","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [
+        ""InvalidGroup""
+      ],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK (không phải 400) — giá trị groupBy không hợp lệ không gây lỗi, backend vẫn trả data (không rõ có nhóm đúng hay fallback về ""Total"" — cần BE xác nhận thêm nếu muốn chắc chắn hành vi fallback).
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC21","groupBys theo dimension ""Data plan"" (dimension thứ 2 theo AC ticket EP-5476)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [
+        ""DataPlan""
+      ],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK, data được nhóm theo tên gói data (vd groupByValue = ""Global 30GB"", ""Vietnam 1GB""...).
+
+[VERIFY 2026-07-03] Đã verify trên STG — giá trị ""DataPlan"" (PascalCase, giống pattern ""Country"") hoạt động đúng và trả 240 records / 24 pages."
+"EP5476_TC22","pageIndex = 0","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 0,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK — pageIndex = 0 ĐƯỢC CHẤP NHẬN (không lỗi), server không tự động ép về trang 1, response echo lại pageIndex=0.
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC23","pageIndex âm (-1)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": -1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","400 Bad Request. Response: {""isSuccess"":false,""messages"":""Validator failed"",""errors"":[{""field"":""ItemRequests[0].PageIndex"",""errorMessage"":[{""errorMessage"":""The field PageIndex must be between 0 and 2147483647.""}]}]}
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC24","pageSize = 0","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 0
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","400 Bad Request. Response: {""isSuccess"":false,""messages"":""Validator failed"",""errors"":[{""field"":""ItemRequests[0].PageSize"",""errorMessage"":[{""errorMessage"":""The field PageSize must be between 1 and 2147483647.""}]}]}
+
+[VERIFY 2026-07-03] Đã verify trên STG — pageSize tối thiểu hợp lệ là 1 (khác pageIndex tối thiểu là 0)."
+"EP5476_TC25","pageSize rất lớn (1000) — kiểm tra có giới hạn tối đa (cap) hay không","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 1000
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK — không bị lỗi, không bị cap, trả về toàn bộ record hiện có (thực tế dataset test chỉ có 33 record nên không kết luận được ngưỡng tối đa tuyệt đối của hệ thống).
+
+[VERIFY 2026-07-03] Đã verify trên STG. Ghi chú: chưa xác định được pageSize tối đa lý thuyết (nếu dataset thật lớn hơn nhiều, cần test thêm với data volume cao trên STG/PROD-like)."
+"EP5476_TC26","Thiếu trường compareDateDimensions","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK (không phải 400) — compareDateDimensions không bắt buộc ở tầng validate.
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC27","compareDateDimensions là mảng rỗng","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": []
+}","200 OK, tương tự trường hợp thiếu hẳn trường này.
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC28","startDate lớn hơn endDate (khoảng ngày không hợp lệ)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""2026-07-01"",
+      ""endDate"": ""1970-01-01""
+    }
+  ]
+}","⚠️ THỰC TẾ: 200 OK, không lỗi — trả về comparisionsValues = 0 (không có dữ liệu trong khoảng ngày ""đảo ngược""), KHÔNG có validation chặn startDate > endDate.
+
+[VERIFY 2026-07-03] Đã verify trên STG."
+"EP5476_TC29","startDate/endDate sai định dạng chuẩn (thử ""01-07-2026"" thay vì ""2026-07-01"")","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""01-07-2026"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","<cần confirm ý nghĩa> - THỰC TẾ: 200 OK, backend PARSE ĐƯỢC chuỗi ""01-07-2026"" và trả giá trị khác 0, nhưng KHÔNG rõ backend hiểu đây là ngày nào (1/7/2026 hay 7/1/2026) — rủi ro sai lệch dữ liệu âm thầm nếu FE/BE không thống nhất format ngày.
+
+[VERIFY 2026-07-03] Đã verify trên STG — request KHÔNG bị từ chối, cần BE xác nhận format ngày được parse chính xác là gì để tránh sai số liệu ẩn."
+"EP5476_TC30","Khoảng ngày sát ngày hiện tại - verify Recurring Data Sale (event-based) KHÔNG áp dụng rule N/A dành cho cohort-based metric","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""2026-07-02"",
+      ""endDate"": ""2026-07-03""
+    }
+  ]
+}","200 OK, trả về giá trị số thực (không phải N/A) dù date range chỉ 1-2 ngày sát hiện tại — đúng theo AC (event-based không áp dụng rule N/A của cohort-based).
+
+[VERIFY 2026-07-03] Đã verify trên STG: trả comparisionsValues thực (974.66 tại thời điểm test), KHÔNG trả N/A. AC được đáp ứng đúng."
+"EP5476_TC31","filters.dataPlan có giá trị hợp lệ (lọc theo gói data, dimension thứ 2 theo AC)","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""dataPlan"": [
+          ""Global 30GB""
+        ]
+      },
+      ""groupBys"": [],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","200 OK, trả về doanh thu Recurring Data Sale chỉ tính riêng gói ""Global 30GB"" (khớp đúng con số groupByValue=""Global 30GB"" khi group by DataPlan).
+
+[VERIFY 2026-07-03] Test case BỔ SUNG sau khi verify — tài liệu gốc từ BE KHÔNG hề đề cập filter ""dataPlan"" (chỉ có ví dụ filters.country), dù AC yêu cầu filter theo cả ""User country"" và ""Data plan"". Đã verify field filter đúng là ""dataPlan"" (camelCase) nhận mảng tên gói."
+"EP5476_TC32","[DATA QUALITY] Kiểm tra không có groupByValue rỗng khi group by Country","POST /api/dashboard/group-by-view","Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Body:
+{
+  ""itemRequests"": [
+    {
+      ""dataSource"": ""recurring-data-sale"",
+      ""filters"": {
+        ""country"": null
+      },
+      ""groupBys"": [
+        ""Country""
+      ],
+      ""pageIndex"": 1,
+      ""pageSize"": 10
+    }
+  ],
+  ""compareDateDimensions"": [
+    {
+      ""startDate"": ""1970-01-01"",
+      ""endDate"": ""2026-07-01""
+    }
+  ]
+}","Tất cả phần tử trong data[].groupByValue phải là tên quốc gia hợp lệ hoặc ""Other"", KHÔNG được rỗng ("""").
+
+[VERIFY 2026-07-03] ❌ FAIL trên STG (2026-07-03): kết quả group by Country có 1 dòng groupByValue = """" (rỗng) với comparisionsValues ≈ 33,608–33,664 — chiếm ~18% tổng doanh thu Recurring Data Sale hiển thị. Có khả năng là giao dịch của user không xác định được quốc gia. Cần Dev/BA xác nhận đây là hành vi mong đợi hay bug ảnh hưởng đến độ chính xác của dimension ""User country"" theo AC."

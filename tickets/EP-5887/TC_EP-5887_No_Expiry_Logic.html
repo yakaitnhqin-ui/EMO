@@ -1,0 +1,1937 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>TC_EP-5887 - No Expiry Logic</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    font-size: 11.5px;
+    line-height: 1.55;
+    margin: 0;
+  }
+  h1 { font-size: 20px; margin: 0 0 10px; border-bottom: 3px solid #2b3a55; padding-bottom: 8px; }
+  h2 { font-size: 15px; margin: 22px 0 8px; color: #2b3a55; border-bottom: 1.5px solid #2b3a55; padding-bottom: 4px; page-break-after: avoid; }
+  h3 { font-size: 12.5px; margin: 16px 0 6px; color: #1d4ed8; page-break-after: avoid; background:#eef2ff; padding:5px 8px; border-left:4px solid #2563eb; border-radius:3px; }
+  h3:has(+ p em) { }
+  p { margin: 5px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10.5px; page-break-inside: avoid; }
+  th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #2b3a55; color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f6f7f9; }
+  hr { border: none; border-top: 1.5px solid #ccc; margin: 14px 0; }
+  code { background: #f0f1f3; padding: 1px 5px; border-radius: 3px; font-family: Consolas, monospace; font-size: 10.5px; }
+  blockquote { margin: 8px 0; padding: 6px 12px; background: #fff7ea; border-left: 4px solid #d97706; color: #444; font-size: 10.5px; }
+  ul, ol { margin: 4px 0; padding-left: 22px; }
+  li { margin: 2px 0; }
+  a { color: #2563eb; text-decoration: none; }
+  strong { color: #111; }
+  .footer { margin-top: 24px; font-size: 9.5px; color: #888; border-top: 1px solid #ccc; padding-top: 6px; }
+</style>
+</head>
+<body>
+<h1>TC_EP-5887 — [BE] Implement No-Expiry Logic</h1>
+<table>
+<thead>
+<tr>
+<th>Trường</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Jira</strong></td>
+<td><a href="https://eskimo-portal.atlassian.net/browse/EP-5887">EP-5887</a></td>
+</tr>
+<tr>
+<td><strong>Tóm tắt</strong></td>
+<td>[BE] Implement No-Expiry Logic</td>
+</tr>
+<tr>
+<td><strong>Trạng thái ticket</strong></td>
+<td><strong>QC</strong> (chuyển từ To Do → QC ngày 06/08/2026 — sẵn sàng test thật, không còn thuần plan)</td>
+</tr>
+<tr>
+<td><strong>Sprint</strong></td>
+<td>Chưa gán sprint (kiểm tra lại trên board trước khi bắt đầu test)</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Tester</strong></td>
+<td>Nhu Huynh</td>
+</tr>
+<tr>
+<td><strong>Ngày phân tích</strong></td>
+<td>2026-08-06 (v3 — sau khi BA update AC lần 2, cùng ngày)</td>
+</tr>
+<tr>
+<td><strong>Ticket liên quan</strong></td>
+<td>BE ref: <a href="https://eskimoapi.atlassian.net/browse/EA-4177">EA-4177</a> (eskimoapi.atlassian.net, khác workspace — không thể fetch chi tiết qua MCP hiện tại) · Liên quan chính sách: <a href="https://eskimo-portal.atlassian.net/browse/EP-5745">EP-5745</a> (No-Expiry cho Fixed Data Plan mua sau 01/06/2026), <a href="https://eskimo-portal.atlassian.net/browse/EP-5875">EP-5875</a> ([BE] No-Expiry cho Free Data &amp; New Account từ 01/06/2026), <a href="https://eskimo-portal.atlassian.net/browse/EP-5906">EP-5906</a> (Expire plan không dùng nếu không có Internal Expiry Date — đang Staging QC)</td>
+</tr>
+<tr>
+<td><strong>Loại ticket</strong></td>
+<td>Story, <strong>không có sub-task FE</strong> — thuần BE logic, không có thay đổi UI được đặc tả trong AC</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>⚠️ Cập nhật sau khi confirm với Dev (06/08/2026)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Giả định ban đầu (khi phân tích lần 1)</th>
+<th>Đã confirm với Dev</th>
+<th>Mức độ ảnh hưởng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Job hàng tháng &quot;extend Singtel Expiry Date&quot; — không rõ extend thêm bao lâu</td>
+<td>Job chạy <strong>tự động mỗi tháng 1 lần</strong> (monthly scan). Mỗi lần quét, nếu Singtel Expiry Date còn ≤32 ngày → <strong>extend thêm +5 năm</strong></td>
+<td><strong>Critical — đã resolve.</strong> Đã cập nhật expected result TC-NXL-004/005/009 bên dưới</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mốc phân nhóm AC1 = &quot;sign up ≥ 20/07/2026&quot;</td>
+<td><strong>Không phải mốc cố định 20/07/2026.</strong> Mốc thật là <strong>ngày RELEASE lên PROD</strong>, và ngày release PROD = <strong>30/07/2026</strong>. Toàn bộ điều kiện &quot;sign up ≥/&lt; 20/07/2026&quot; trong AC gốc cần đọc lại là &quot;sign up sau/trước ngày release PROD (30/07/2026)&quot;</td>
+<td><strong>Critical — sai lệch so với câu chữ AC gốc trên Jira.</strong> Đã cập nhật lại mốc ngày trong toàn bộ test case bên dưới theo 30/07/2026</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Cơ chế cũ bị loại bỏ ở AC1 chỉ là &quot;extend +5 năm khi mua thêm&quot;</td>
+<td>Dev clarify: cơ chế cũ (trước EP-5887) thực chất là <strong>mỗi lần mua &amp; activate 1 plan xong (kể cả plan đầu tiên), hệ thống tự extend Singtel Expiry Date +3 năm</strong> — cơ chế này bị bỏ hoàn toàn cho AC1, không giới hạn ở &quot;mua thêm/additional&quot;</td>
+<td><strong>Major.</strong> Mở rộng phạm vi test TC-NXL-001/002 sang cả lần mua plan <strong>đầu tiên</strong>, không chỉ &quot;mua thêm&quot;</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Transfer Data giữa các nhóm — chưa có AC nào mô tả</td>
+<td>Chưa có xác nhận chính thức từ BA/Dev, chỉ có giả thuyết đang đề xuất: &quot;vì user sau 01/06/2026 đã tự động mark No-Expiry (theo EP-5875), nên khi transfer hành vi No-Expiry theo đúng flag của account nhận, không cần logic transfer riêng cho EP-5887&quot;. <strong>Câu hỏi vẫn CHƯA đóng</strong></td>
+<td>Major — giữ trong checklist, kèm giả thuyết để BA/Dev duyệt nhanh</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Internal Expiry Date cho nhóm không No-Expiry — mặc định coi &quot;không có Internal Expiry Date&quot; = No-Expiry</td>
+<td>Dev clarify: có <strong>2 trạng thái khác nhau</strong> cần phân biệt: (a) <em>không có Internal Expiry Date NHƯNG được mark No-Expiry</em> (đúng cho AC1/AC2), khác với (b) <em>không có Internal Expiry Date VÀ KHÔNG được mark No-Expiry</em> (VD: plan mới chưa từng dùng, chưa đủ điều kiện tính Internal Expiry Date — vẫn thuộc AC3, KHÔNG được xử lý nhầm thành No-Expiry)</td>
+<td>Major — bổ sung TC-EP-NXL-019 để verify hệ thống không lẫn 2 trạng thái này</td>
+</tr>
+<tr>
+<td>6</td>
+<td>AC4 &quot;ignore users who currently have a paused data plan&quot; — không rõ skip toàn user hay chỉ riêng plan paused</td>
+<td><strong>Đã confirm: Toàn bộ plan của user sẽ được ignore</strong> (không chỉ riêng plan đang paused) — job bỏ qua hoàn toàn user này, kể cả các plan Active khác cũng KHÔNG được extend trong lần quét đó</td>
+<td><strong>Major — đã resolve.</strong> Đã cập nhật expected result TC-NXL-013/014 bên dưới</td>
+</tr>
+</tbody></table>
+<h2>🆕 BA update AC lần 2 (Jira comment #26540, 06/08/2026) — thay đổi lớn</h2>
+<p>BA vừa sửa lại AC gốc trên Jira, có 2 thay đổi cần cập nhật ngay:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Thay đổi</th>
+<th>Nội dung mới</th>
+<th>Ảnh hưởng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>7</td>
+<td>Mốc cutoff AC1/AC2</td>
+<td>Đổi câu chữ từ &quot;signed up after <strong>20/7</strong>&quot; / &quot;before <strong>20/7</strong>&quot; → <strong>&quot;signed up after/before the releasing&quot;</strong>. Khớp với những gì Dev đã confirm miệng trước đó (ngày release PROD = 30/07/2026) — nay đã chính thức ghi vào AC, không còn là suy luận riêng của QC</td>
+<td>Xác nhận lại hướng đã làm là đúng, không cần sửa gì thêm ở phần mốc ngày</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>AC3 bị viết lại hoàn toàn</strong></td>
+<td>AC3 KHÔNG còn là nhóm ổn định giữ legacy mãi mãi. Logic mới: <strong>&quot;If user account is added new data plan → mark user as No-Expiry user → user become Existing No-Expiry user (refer to AC2)&quot;</strong> — nghĩa là AC3 chỉ là trạng thái tạm, hễ user mua/thêm bất kỳ data plan mới nào → <strong>LẬP TỨC chuyển thành AC2</strong> (lượt mua đó không áp dụng rollover). AC3 chỉ còn áp dụng cho user <strong>chưa từng mua/thêm gì mới</strong></td>
+<td><strong>Critical — TC-NXL-010/011 cũ đã SAI theo AC mới, phải rewrite. Bổ sung TC-NXL-021/022/023 cho ambiguity mới phát sinh</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Ambiguity MỚI phát sinh từ bản AC3 vừa update (chưa confirm):</strong></p>
+<ul>
+<li>AC3 viết &quot;added new <strong>data plan</strong>&quot; — không có chữ &quot;paid&quot; như AC1/AC2 (&quot;new <strong>paid</strong> data plan&quot;). Vậy nhận <strong>free data</strong> (không phải mua paid) có kích hoạt convert thành No-Expiry không, hay chỉ paid plan mới tính?</li>
+<li>Lượt mua <strong>kích hoạt</strong> việc convert AC3→AC2 có được extend Singtel Expiry +5 năm ngay trong lượt đó không, hay +5 năm chỉ tính từ lượt mua <strong>kế tiếp</strong> (vì AC2 ghi &quot;purchases an <strong>additional</strong> paid data plan&quot; — lượt đầu tiên có tính là &quot;additional&quot; không)?</li>
+<li>Các lot/plan cũ (trước khi convert) của user có tự động chuyển sang No-Expiry ngay lúc convert không (giống mechanic gốc ở EP-5745 — mua mới thì TẤT CẢ lot cũ convert theo), hay chỉ đổi flag ở account, còn lot cũ vẫn giữ nguyên hạn Internal/Singtel Expiry Date cũ?</li>
+</ul>
+<p><strong>Câu hỏi vẫn CHƯA đóng</strong> (chưa có confirm chính thức): 3 ambiguity mới ở trên (AC3), field <code>isNoExpiry</code> dùng chung hay tách biệt cho AC1/AC2 (xem TC-NXL-018), cơ chế đánh dấu &quot;paused&quot; ở mức data plan, cách trigger job thủ công trên STG, và Transfer Data xuyên nhóm (mục 4 ở trên).</p>
+<hr>
+<h2>Phân tích ticket</h2>
+<h3>Bối cảnh</h3>
+<p>EP-5887 là bản refine/mở rộng tiếp theo của chuỗi ticket No-Expiry (EP-5745 → EP-5875 → EP-5887). Ticket này <strong>định nghĩa lại chính xác 3 nhóm user</strong> và hành vi expiry khác nhau cho từng nhóm, dựa trên mốc <strong>ngày release PROD (đã confirm với Dev = 30/07/2026)</strong>, không phải mốc &quot;20 Jul 2026&quot; ghi trong câu chữ AC gốc trên Jira — mốc này cũng khác với mốc <strong>01 Jun 2026</strong> đã dùng ở EP-5745/EP-5875 (mốc purchase/free-data-issue). Cần phân biệt rõ 2 mốc ngày khi test để tránh nhầm lẫn nhóm user.</p>
+<p>Ticket cũng lần đầu tiên nhắc rõ 2 khái niệm cần phân biệt trong toàn bộ luồng:</p>
+<ul>
+<li><strong>Internal Expiry Date</strong>: hạn nội bộ dựa trên việc data plan có được sử dụng (used) trong vòng 2 năm hay không (theo EP-5906).</li>
+<li><strong>Singtel Expiry Date</strong>: hạn hết hạn thực tế bên carrier (Singtel).</li>
+</ul>
+<h3>3 nhóm user &amp; hành vi kỳ vọng</h3>
+<table>
+<thead>
+<tr>
+<th>Nhóm</th>
+<th>Điều kiện</th>
+<th>Rollover khi mua/activate plan</th>
+<th>Extend Singtel Expiry khi mua/activate plan</th>
+<th>Scheduled job đầu tháng (extend nếu Singtel Expiry còn hạn ≤32 ngày)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>AC1 — New users</strong></td>
+<td>Sign up <strong>sau ngày release PROD (30/07/2026)</strong></td>
+<td>❌ Không áp dụng</td>
+<td>❌ Không extend (cơ chế cũ +3 năm khi activate đã bị bỏ hoàn toàn)</td>
+<td>✅ Có áp dụng — <strong>extend +5 năm</strong> mỗi lần job quét thấy hạn ≤32 ngày</td>
+</tr>
+<tr>
+<td><strong>AC2 — Existing No-Expiry users</strong></td>
+<td>Sign up <strong>trước ngày release PROD (30/07/2026)</strong> VÀ đã được đánh dấu No-Expiry (từ logic EP-5745/EP-5875 <strong>HOẶC</strong> vừa mới convert từ AC3 — xem dưới)</td>
+<td>❌ Không áp dụng</td>
+<td>✅ Có extend +5 năm khi mua thêm plan mới</td>
+<td>✅ Có áp dụng — <strong>extend +5 năm</strong> mỗi lần job quét thấy hạn ≤32 ngày</td>
+</tr>
+<tr>
+<td><strong>AC3 — Existing users chưa No-Expiry</strong> <em>(trạng thái TẠM, không ổn định)</em></td>
+<td>Sign up <strong>trước ngày release PROD (30/07/2026)</strong> VÀ <strong>chưa từng mua/thêm data plan mới nào</strong> kể từ trước tới giờ</td>
+<td>Không áp dụng (không có gì để rollover vì chưa mua gì)</td>
+<td>—</td>
+<td>Không thuộc phạm vi (không No-Expiry)</td>
+</tr>
+<tr>
+<td><strong>AC3 → AC2 (trigger convert)</strong> 🆕</td>
+<td>Ngay khi user AC3 <strong>mua/thêm 1 data plan mới</strong> (paid — free chưa rõ, xem ambiguity)</td>
+<td>❌ Không áp dụng cho lượt mua này</td>
+<td>⚠️ Chưa rõ — có +5 năm ngay lượt này không? (ambiguity)</td>
+<td>Từ sau lượt này, user chính thức là AC2</td>
+</tr>
+<tr>
+<td><strong>AC4 — Paused plan</strong></td>
+<td>Bất kỳ nhóm nào, đang có plan ở trạng thái Paused</td>
+<td>—</td>
+<td>—</td>
+<td>❌ Job bỏ qua <strong>toàn bộ user</strong> (đã confirm — mọi plan của user, kể cả plan Active khác, đều không được extend trong lần quét đó)</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Lưu ý quan trọng:</strong> Mốc ngày dùng để phân AC1 vs AC2/AC3 là <strong>ngày release PROD (30/07/2026)</strong> — nay đã ghi chính thức trong AC (&quot;after/before the releasing&quot;), khớp với confirm trước đó của Dev.</p>
+<p><strong>Lưu ý quan trọng #2 (BA update lần 2):</strong> AC3 <strong>không còn là điểm dừng ổn định</strong>. Đây là mô hình chuyển trạng thái (state machine), không phải 3 nhóm tĩnh song song — AC3 chỉ là &quot;chưa kích hoạt No-Expiry&quot;, và một khi user mua bất kỳ plan mới nào thì AC3 biến mất, user trở thành AC2 vĩnh viễn (không quay lại AC3 được nữa).</p>
+</blockquote>
+<h3>Điểm rủi ro cần tập trung QC</h3>
+<ol>
+<li>🆕 <strong>AC3→AC2 conversion là rủi ro CAO NHẤT sau bản update lần 2</strong>: đây là thay đổi hành vi lớn nhất, ảnh hưởng số đông nhất (mọi user cũ mua bất kỳ thứ gì đều bị convert). Nếu BE quên implement trigger này, user cũ sẽ mãi mãi ở AC3 legacy dù đã mua thêm — sai với AC mới. Ngược lại nếu convert nhưng convert sai (VD convert cả free data ngoài ý muốn, hoặc quên convert lot cũ), sẽ gây khiếu nại từ khách hàng thật vì ảnh hưởng trực tiếp tới hạn dùng data đã mua.</li>
+<li><strong>AC1 vs AC2 là điểm dễ regression thứ hai</strong>: cả 2 đều &quot;không rollover&quot;, chỉ khác duy nhất ở hành vi extend +5 năm khi mua thêm plan. Nếu BE phân nhóm sai (dựa sai field/ngày), rất dễ merge nhầm 2 nhóm này thành 1 mà không phát hiện qua test UI thông thường.</li>
+<li><strong>Ambiguity còn CHƯA đóng, cần confirm tiếp với BA/Dev:</strong><ul>
+<li>AC1 chỉ nêu điều kiện &quot;sign up sau ngày release PROD&quot;, không nói rõ user này có được đánh dấu flag <code>No-Expiry</code> hay không (theo EP-5875, new account sau 01/06/2026 tự động No-Expiry). Cần hỏi: AC1 và AC2 có dùng chung 1 field <code>isNoExpiry</code> không, hay phân biệt hoàn toàn bằng ngày sign up ở tầng logic riêng?</li>
+<li><del>AC4 &quot;ignore users who currently have a paused data plan&quot; — phạm vi skip</del> <strong>Đã confirm (xem bảng cập nhật mục 6): toàn bộ plan của user bị skip, không chỉ riêng plan paused.</strong></li>
+<li>Không tìm thấy endpoint &quot;pause/resume data plan&quot; rõ ràng trong WBS (chỉ có <code>POST /api/Esims/suspend-esim</code> ở mức eSIM, không phải mức data plan) — cần xác nhận với BE cơ chế đánh dấu &quot;paused&quot; nằm ở đâu (DB flag/CS tool riêng?) để chuẩn bị test data.</li>
+<li>Ticket không có API/endpoint cụ thể nào để <strong>trigger scheduled job</strong> thủ công trên môi trường Staging — cần BE hỗ trợ trigger job hoặc set lại ngày hệ thống, vì job chỉ chạy tự động &quot;đầu mỗi tháng&quot;.</li>
+<li>Transfer Data giữa 2 account thuộc 2 nhóm khác nhau — chỉ có giả thuyết (xem bảng &quot;Cập nhật sau khi confirm&quot; mục 4), chưa có xác nhận chính thức.</li>
+</ul>
+</li>
+<li><strong>Test data theo mốc ngày</strong>: hôm nay đã là 2026-08-06, chỉ mới 7 ngày sau ngày release PROD (30/07/2026), nên:<ul>
+<li>Test nhóm <strong>AC1</strong> (sign up sau 30/07/2026): tạo account mới bình thường ngay lúc test — không cần seed.</li>
+<li>Test nhóm <strong>AC2 và AC3</strong> (sign up trước 30/07/2026): vì mốc này chỉ mới 7 ngày trước, <strong>hầu hết account cũ có sẵn trên STG đều đã thoả điều kiện &quot;sign up trước mốc&quot;</strong> — không cần seed account hoàn toàn mới, chỉ cần chọn đúng account đã có/chưa có flag No-Expiry sẵn (từ dữ liệu test EP-5745 trước đó). Việc chuẩn bị test data AC2/AC3 dễ hơn so với đánh giá ban đầu.</li>
+<li>Riêng TC-NXL-012 (boundary đúng ngày release) vẫn cần BE/DevOps xác nhận <strong>thời điểm chính xác (giờ/timezone)</strong> deploy PROD ngày 30/07/2026 để seed account đúng biên.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>API liên quan</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Mục đích</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>/api/data-plan-sale-transaction/search-by-user</code></td>
+<td>POST</td>
+<td>Lấy lịch sử mua plan của user, kiểm tra rollover/extend sau mỗi purchase</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>/api/Esims/add-data-plan/{id}</code></td>
+<td>POST</td>
+<td>Mua/thêm data plan — kiểm tra field expiry, rollover trả về theo từng nhóm user</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>/api/Esims/extend-subscription-expire-date-by-user-data-plan</code></td>
+<td>POST</td>
+<td>Extend Singtel Expiry Date — dùng để dựng lại state hoặc verify hành vi extend theo nhóm</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>/api/Esims/cancel-data-plan/{id}</code></td>
+<td>POST</td>
+<td>Cancel data plan, dựng lại state test</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>/api/Esims/suspend-esim</code></td>
+<td>POST</td>
+<td>API gần nhất liên quan &quot;paused&quot; ở mức eSIM — cần xác nhận với BE có phải cơ chế dùng cho AC4 hay không</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>/api/data-plan/details/{dataplanIdOrSlug}</code></td>
+<td>GET</td>
+<td>Chi tiết data plan — đối chiếu Internal Expiry Date / Singtel Expiry Date / flag No-Expiry</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>/api/data-wallet</code> (hoặc tương đương)</td>
+<td>GET</td>
+<td>Danh sách lot + expiry hiện tại của user, dùng để so sánh trước/sau mỗi test step</td>
+</tr>
+<tr>
+<td>8</td>
+<td><em>(chưa xác định)</em></td>
+<td>—</td>
+<td>Không có endpoint public cho scheduled job đầu tháng — cần hỏi BE cách trigger thủ công trên STG (manual trigger endpoint / Hangfire dashboard / chỉnh system date)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Danh sách test case</h2>
+<table>
+<thead>
+<tr>
+<th>TC ID</th>
+<th>Tên</th>
+<th>Loại</th>
+<th>Priority</th>
+<th>AC</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TC-EP-NXL-001</td>
+<td>New user (sign up sau ngày release PROD 30/07/2026) mua plan đầu tiên/thêm plan → KHÔNG áp dụng rollover, KHÔNG tự extend +3 năm khi activate</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC1</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-002</td>
+<td>New user mua thêm plan → Singtel Expiry Date KHÔNG được extend</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC1</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-003</td>
+<td>New user mua plan 2 lần liên tiếp trong ngày → rollover vẫn không áp dụng ở cả 2 lần</td>
+<td>Edge</td>
+<td>P2</td>
+<td>AC1</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-004</td>
+<td>Scheduled job đầu tháng extend Singtel Expiry Date +5 năm cho New user có hạn còn ≤32 ngày</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC1</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-005</td>
+<td>Scheduled job KHÔNG extend cho New user có Singtel Expiry Date còn &gt; 32 ngày</td>
+<td>Negative</td>
+<td>P2</td>
+<td>AC1</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-006</td>
+<td>Existing No-Expiry user (sign up trước 30/07/2026, đã No-Expiry) mua thêm plan → Singtel Expiry Date ĐƯỢC extend +5 năm</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-007</td>
+<td>Existing No-Expiry user mua thêm plan → KHÔNG áp dụng rollover (giống AC1)</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-008</td>
+<td>So sánh song song AC1 vs AC2 cùng mua 1 loại plan → chỉ khác duy nhất ở hành vi extend +5 năm</td>
+<td>Edge</td>
+<td>P1</td>
+<td>AC1, AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-009</td>
+<td>Scheduled job đầu tháng cũng extend +5 năm Singtel Expiry Date cho Existing No-Expiry user (hạn ≤32 ngày)</td>
+<td>Happy path</td>
+<td>P2</td>
+<td>AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-010</td>
+<td>🔄 <em>(rewrite theo AC mới)</em> Existing user chưa No-Expiry (AC3) mua data plan mới → CONVERT NGAY thành No-Expiry (AC2), lượt mua này KHÔNG rollover</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC3→AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-011</td>
+<td>🔄 <em>(rewrite theo AC mới)</em> Existing user AC3 CHƯA mua gì mới → vẫn giữ nguyên Internal + Singtel Expiry Date (trạng thái tạm ổn định)</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC3</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-012</td>
+<td>User sign up đúng ngày release PROD 30/07/2026 (boundary) → được xử lý là AC1 (New user), không rơi vào AC3</td>
+<td>Edge</td>
+<td>P1</td>
+<td>AC1, AC3</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-013</td>
+<td>User có plan đang Paused khi job chạy đầu tháng → user bị job bỏ qua hoàn toàn</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC4</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-014</td>
+<td>User có 1 plan Paused + 1 plan Active khác cùng lúc → verify job skip TOÀN BỘ user (đã confirm), plan Active cũng KHÔNG được extend</td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC4</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-015</td>
+<td>Plan Paused được resume trước khi job chạy tháng sau → job xử lý bình thường, không còn bị skip</td>
+<td>Negative</td>
+<td>P2</td>
+<td>AC4</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-016</td>
+<td>API purchase/add-data-plan trả đúng field/flag phân biệt rollover=false theo từng nhóm AC1/AC2</td>
+<td>Happy path</td>
+<td>P2</td>
+<td>AC1, AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-017</td>
+<td>API data-plan/details trả đúng cả 2 field Internal Expiry Date và Singtel Expiry Date, không lẫn giữa các nhóm</td>
+<td>Happy path</td>
+<td>P2</td>
+<td>AC1, AC2, AC3</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-018</td>
+<td><em>(Cần confirm BA/Dev)</em> Xác nhận field <code>isNoExpiry</code> dùng chung cho AC1 và AC2, hay 2 tầng logic riêng biệt theo ngày sign up</td>
+<td>Edge</td>
+<td>P2</td>
+<td>AC1, AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-019</td>
+<td>Phân biệt &quot;không có Internal Expiry Date nhưng No-Expiry&quot; vs &quot;không có Internal Expiry Date và KHÔNG No-Expiry&quot; (plan mới chưa dùng) — <strong>tần suất thực tế RẤT CAO, xem mục &quot;Đánh giá tần suất&quot; bên dưới</strong></td>
+<td>Happy path</td>
+<td>P1</td>
+<td>AC3</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-020</td>
+<td>Race condition: AC2 user có Singtel Expiry ≤32 ngày mua thêm plan đúng lúc job đầu tháng cũng xử lý account này → kiểm tra có bị cộng dồn 2 lần +5 năm (thành +10 năm) không</td>
+<td>Edge</td>
+<td>P1</td>
+<td>AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-021 🆕</td>
+<td>AC3 user mua data plan mới → các lot/plan CŨ (trước khi mua) có convert sang No-Expiry ngay không, hay chỉ account-level flag đổi</td>
+<td>Edge</td>
+<td>P1</td>
+<td>AC3→AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-022 🆕</td>
+<td>Lượt mua kích hoạt convert AC3→AC2 có được extend Singtel Expiry +5 năm ngay trong lượt đó không</td>
+<td>Edge</td>
+<td>P1</td>
+<td>AC3→AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-023 🆕</td>
+<td>AC3 user nhận FREE data (không phải mua paid) → có kích hoạt convert thành No-Expiry không (AC3 không ghi rõ &quot;paid&quot;)</td>
+<td>Edge</td>
+<td>P1</td>
+<td>AC3→AC2</td>
+</tr>
+<tr>
+<td>TC-EP-NXL-024 🆕</td>
+<td>Sau khi convert AC3→AC2, user mua thêm plan lần 2 → áp dụng đúng rule AC2 (rollover=false, extend +5 năm) — verify convert là vĩnh viễn, không quay lại AC3</td>
+<td>Happy path</td>
+<td>P2</td>
+<td>AC2</td>
+</tr>
+</tbody></table>
+<h3>Đánh giá tần suất xảy ra thực tế (để ưu tiên chuẩn bị test data)</h3>
+<table>
+<thead>
+<tr>
+<th>Nhóm</th>
+<th>TC</th>
+<th>Đánh giá</th>
+<th>Ghi chú chuẩn bị data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>🟢 Xảy ra hàng ngày, test ngay không cần seed</td>
+<td>001, 002, 006, 007, 008, 016, 017</td>
+<td>User mới/account cũ có sẵn đều đáp ứng điều kiện ngay</td>
+<td>Không cần chuẩn bị đặc biệt</td>
+</tr>
+<tr>
+<td>🟢 Thực chất là trạng thái MẶC ĐỊNH của mọi lượt mua mới, không phải case hiếm</td>
+<td>019</td>
+<td>Mọi plan AC3 mới mua, chưa dùng, đều đang ở trạng thái này — rủi ro ảnh hưởng diện rộng nếu BE sai</td>
+<td>Test bằng bất kỳ purchase mới nào, không cần setup gì thêm</td>
+</tr>
+<tr>
+<td>🟢🆕 Rất phổ biến — có thể là case xảy ra nhiều NHẤT trong toàn ticket</td>
+<td>010, 021, 022, 024</td>
+<td>Sau bản update AC3, MỌI existing user mua bất kỳ thứ gì đều trigger convert — không phải edge case, là hành vi mặc định của toàn bộ user cũ mỗi khi họ mua hàng</td>
+<td>Chọn bất kỳ account cũ chưa No-Expiry, mua 1 plan bất kỳ là ra case ngay</td>
+</tr>
+<tr>
+<td>🟢 Vẫn còn nhiều account thật ở trạng thái này (chưa mua gì kể từ trước tới giờ)</td>
+<td>011</td>
+<td>Vì release mới 7 ngày, còn rất nhiều user cũ chưa mua gì mới — dễ tìm</td>
+<td>Chọn account cũ, kiểm tra lịch sử mua chưa có giao dịch nào sau release</td>
+</tr>
+<tr>
+<td>🟡🆕 Ambiguity thật — cần dữ liệu trước rồi mới verify được</td>
+<td>023</td>
+<td>Cần tìm/tạo được 1 case AC3 user nhận free data (không phải mua) để biết free data có trigger convert hay không</td>
+<td>Phối hợp BE xác nhận cơ chế cấp free data, hoặc dùng tính năng tặng data nếu có</td>
+</tr>
+<tr>
+<td>🟡 Có thật nhưng cần BE backdate mới bắt kịp lịch test</td>
+<td>004, 009</td>
+<td>Singtel Expiry hiện tại của account AC1 (mới 7 ngày) và AC2 (vừa +5 năm) đều đang rất xa hạn 32 ngày — không tự nhiên xảy ra sớm</td>
+<td>Cần BE set lại Singtel Expiry Date về gần hạn cho 1 account test</td>
+</tr>
+<tr>
+<td>🟡 Đây là trạng thái mặc định hiện tại — dễ hơn cả nhóm trên</td>
+<td>005</td>
+<td>Vì hạn còn xa, hầu hết account bây giờ đang tự nhiên ở trạng thái &quot;&gt;32 ngày&quot;</td>
+<td>Test được ngay bằng account bất kỳ</td>
+</tr>
+<tr>
+<td>🟡 Có user thật trong DB, nên tìm thay vì seed giả</td>
+<td>012</td>
+<td>User đăng ký đúng lúc release đã tồn tại thật trong DB (release đã qua 7 ngày)</td>
+<td>Nhờ BE query account thật theo timestamp release, không cần tạo giả</td>
+</tr>
+<tr>
+<td>🟡 Hành vi hợp lý (VD tạm dừng khi đi công tác) nhưng cần set đúng thời điểm test</td>
+<td>013, 015</td>
+<td>Pause là hành vi user thật có thể làm, nhưng để rơi đúng lúc job chạy cần set chủ động</td>
+<td>Chủ động set Paused + backdate hạn gần job-run</td>
+</tr>
+<tr>
+<td>🟡 Hành vi khách hàng điển hình (&quot;sắp hết hạn thì mua thêm&quot;) — ưu tiên cao hơn ban đầu</td>
+<td>020</td>
+<td>Không phải case lý thuyết — user thấy sắp hết hạn thường có xu hướng mua thêm ngay</td>
+<td>Kết hợp setup của TC-009 (hạn ≤32 ngày) + thực hiện mua thêm trước/trong lúc job chạy</td>
+</tr>
+<tr>
+<td>🔴 Hiếm gặp tự nhiên, phải dựng state chủ động</td>
+<td>003, 014</td>
+<td>Mua liên tiếp nhiều lần/ngày, hoặc vừa Paused vừa Active đúng lúc job chạy — tổ hợp đặc thù</td>
+<td>Dựng state thủ công, không đợi tự nhiên xảy ra</td>
+</tr>
+<tr>
+<td>⚪ Không phải &quot;case xảy ra&quot; — là câu hỏi thiết kế</td>
+<td>018</td>
+<td>Cần câu trả lời BA/Dev trước, chưa test được</td>
+<td>Gửi câu hỏi trước khi chạy</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Chi tiết test case</h2>
+<hr>
+<h3>TC-EP-NXL-001 | New user mua plan đầu tiên/thêm plan → KHÔNG rollover, KHÔNG tự extend +3 năm khi activate</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Tạo account mới, đăng ký (sign up) ngay tại thời điểm test (sau ngày release PROD 30/07/2026 nên account mới mặc định thuộc nhóm New user)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Sign up account mới</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua &amp; activate 1 Data Plan đầu tiên, ghi nhận Singtel Expiry Date ngay sau khi activate</td>
+<td>VD: Spain 2GB</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Mua thêm 1 Data Plan thứ 2 trước khi plan 1 dùng hết</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Kiểm tra Data Balance / data wallet sau khi mua plan 2</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Ngay sau khi activate plan đầu tiên (bước 2), Singtel Expiry Date <strong>KHÔNG</strong> bị tự động +3 năm như cơ chế cũ (dev đã confirm cơ chế extend +3 năm khi activate bị bỏ hoàn toàn cho nhóm AC1, áp dụng từ lần activate đầu tiên, không chỉ khi &quot;mua thêm&quot;)</li>
+<li>Balance/data lot của plan 1 và plan 2 được ghi nhận <strong>độc lập</strong>, không có hành vi rollover (dồn/carry-over balance dư từ plan cũ sang plan mới như logic cũ)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-002 | New user mua thêm plan → Singtel Expiry Date KHÔNG bị extend</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account New user đã có ít nhất 1 data plan (từ TC-NXL-001)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Ghi nhận Singtel Expiry Date hiện tại của plan đang có (qua API <code>data-plan/details</code>)</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua thêm 1 paid data plan mới</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Gọi lại API <code>data-plan/details</code> / data wallet, so sánh Singtel Expiry Date trước và sau</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Singtel Expiry Date của các plan hiện có <strong>không thay đổi</strong> — không bị extend theo bất kỳ cơ chế nào (không +3 năm theo cơ chế activate cũ, không +5 năm theo cơ chế No-Expiry của AC2) sau khi mua plan mới. Nhóm AC1 chỉ được extend qua scheduled job hàng tháng (xem TC-NXL-004)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-003 | New user mua plan 2 lần liên tiếp trong ngày → rollover vẫn không áp dụng</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account New user</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Mua plan A</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua ngay plan B trong cùng ngày (không chờ plan A hết hạn/hết data)</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Mua ngay plan C tiếp theo</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Kiểm tra data wallet sau 3 lần mua</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Không có rollover phát sinh ở bất kỳ lần mua nào, kể cả khi mua liên tiếp nhiều lần trong thời gian ngắn</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-004 | Scheduled job đầu tháng extend Singtel Expiry Date cho New user (hạn ≤32 ngày)</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Cần BE hỗ trợ seed/set Singtel Expiry Date của 1 plan New user còn hạn ≤32 ngày, và hỗ trợ trigger job thủ công trên STG (không có API public để tự trigger)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận Singtel Expiry Date hiện tại của plan test còn ≤32 ngày</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Yêu cầu BE trigger scheduled job (hoặc chờ tới đầu tháng thực tế trên STG)</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sau khi job chạy, gọi lại API kiểm tra Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Singtel Expiry Date được job tự động <strong>extend thêm +5 năm</strong> (đã confirm với Dev: job chạy hàng tháng, mỗi lần quét thấy hạn còn ≤32 ngày sẽ extend +5 năm — áp dụng cho cả AC1 và AC2)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Vẫn cần xác nhận với BE cơ chế trigger job thủ công trên STG trước khi test case này có thể thực thi — nếu không hỗ trợ được, đánh dấu BLOCKED và note rõ.</p>
+<hr>
+<h3>TC-EP-NXL-005 | Scheduled job KHÔNG extend cho New user có hạn còn &gt; 32 ngày</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Negative</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Plan test có Singtel Expiry Date còn &gt; 32 ngày tại thời điểm job chạy</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận Singtel Expiry Date còn &gt; 32 ngày</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Trigger/chờ job chạy đầu tháng</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra lại Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Singtel Expiry Date <strong>giữ nguyên</strong>, không bị extend (job chỉ xử lý các hạn nằm trong khoảng 32 ngày tới)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-006 | Existing No-Expiry user mua thêm plan → Singtel Expiry Date ĐƯỢC extend +5 năm</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Chọn 1 account có sẵn trên STG: sign up <strong>trước ngày release PROD (30/07/2026)</strong>, đã được đánh dấu No-Expiry (VD: đã mua Fixed Data Plan sau 01/06/2026 theo EP-5745 — account test cũ của EP-5745 có thể tái dùng, không cần seed mới)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Đăng nhập account đã seed, ghi nhận Singtel Expiry Date hiện tại</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua thêm 1 paid data plan mới</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Gọi lại API kiểm tra Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Singtel Expiry Date của các plan hiện có được <strong>extend thêm 5 năm</strong> sau khi mua plan mới (khác với nhóm AC1)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-007 | Existing No-Expiry user mua thêm plan → KHÔNG áp dụng rollover</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Giống TC-EP-NXL-006</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Đăng nhập account đã seed</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua thêm 1 plan mới trước khi plan cũ dùng hết data</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra data wallet</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Không có rollover balance giữa plan cũ và plan mới (giống hành vi AC1, chỉ khác ở việc có extend +5 năm hay không)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-008 | So sánh song song AC1 vs AC2 — điểm khác biệt duy nhất là extend +5 năm</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge (regression trọng điểm)</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1, AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Có sẵn 2 account: 1 New user (AC1) và 1 Existing No-Expiry user (AC2), cả 2 đều có ít nhất 1 plan sẵn có</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Ghi nhận Singtel Expiry Date hiện tại của cả 2 account</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cả 2 account cùng mua <strong>cùng loại plan</strong> trong cùng khung thời gian</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>So sánh Singtel Expiry Date và trạng thái rollover của cả 2 sau khi mua</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Account AC1: rollover=false, Singtel Expiry Date không đổi</li>
+<li>Account AC2: rollover=false, Singtel Expiry Date +5 năm</li>
+<li>Đây là điểm phân nhóm dễ bị lẫn nhất trong code — nếu 2 account cho kết quả extend giống nhau thì đây là bug ưu tiên cao</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-009 | Scheduled job cũng extend cho Existing No-Expiry user (hạn ≤32 ngày)</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC2 có plan Singtel Expiry Date còn ≤32 ngày, cần BE trigger job</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận Singtel Expiry Date còn ≤32 ngày</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Trigger/chờ job chạy đầu tháng</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra lại Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Job cũng extend Singtel Expiry Date cho nhóm AC2 tương tự AC1 (job áp dụng cho cả 2 nhóm No-Expiry)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-010 | 🔄 Existing user chưa No-Expiry (AC3) mua data plan mới → CONVERT NGAY thành No-Expiry (AC2)</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC3 → AC2 (theo AC3 bản update lần 2, Jira comment #26540)</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account sign up trước ngày release PROD (30/07/2026), <strong>chưa</strong> từng được đánh dấu No-Expiry, <strong>chưa từng mua/thêm data plan mới nào</strong> kể từ trước tới giờ</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Ghi nhận flag No-Expiry hiện tại (phải là <code>false</code>), Internal Expiry Date + Singtel Expiry Date hiện tại</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua 1 paid data plan mới</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra lại flag No-Expiry, trạng thái rollover của lượt mua này</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li><strong>Đã đổi theo AC3 bản update mới (KHÁC với hành vi cũ trước đây):</strong> ngay sau khi mua, account được <strong>mark No-Expiry = true</strong>, chính thức chuyển thành <strong>Existing No-Expiry user (AC2)</strong></li>
+<li>Lượt mua vừa rồi <strong>KHÔNG áp dụng rollover</strong> (đúng theo rule AC2)</li>
+<li>⚠️ Đây là thay đổi hành vi lớn nhất của bản update AC lần 2 — nếu BE code theo AC cũ (giữ legacy mãi mãi), test này sẽ FAIL rõ ràng</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> TC này đã rewrite hoàn toàn theo AC3 bản update 06/08/2026 (Jira comment #26540) — khác với kỳ vọng ban đầu (giữ legacy mãi mãi). Xem thêm TC-021/022/023 cho các ambiguity liên quan tới sự kiện convert này.</p>
+<hr>
+<h3>TC-EP-NXL-011 | 🔄 Existing user AC3 CHƯA mua gì mới → vẫn giữ nguyên logic legacy</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC3 (trạng thái tạm — chưa trigger convert)</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC3: sign up trước ngày release PROD, chưa No-Expiry, <strong>và chưa từng mua/thêm data plan mới nào</strong> — chỉ quan sát, KHÔNG thực hiện mua gì trong test này</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Gọi API data wallet / data-plan details của account AC3</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Kiểm tra response body — KHÔNG thực hiện purchase nào</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Response trả đủ cả Internal Expiry Date và Singtel Expiry Date, không bị lược field hoặc trả nhầm <code>isNoExpiry: true</code></li>
+<li>Vì chưa mua gì mới, account vẫn ở trạng thái AC3 — đây là trạng thái <strong>tạm, không phải điểm dừng vĩnh viễn</strong> (sẽ biến mất ngay khi user mua bất kỳ thứ gì, xem TC-010)</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Khác với TC-010 — TC này đặc biệt PHẢI không có hành động mua hàng nào, để verify đúng trạng thái &quot;chưa trigger convert&quot;.</p>
+<hr>
+<h3>TC-EP-NXL-012 | Boundary: user sign up đúng thời điểm release PROD (30/07/2026) → xử lý là AC1</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1, AC3</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Cần BE/DevOps xác nhận <strong>giờ/timezone chính xác</strong> lúc deploy PROD ngày 30/07/2026, sau đó seed 1 account có sign-up timestamp = đúng thời điểm đó (chính xác mốc boundary &quot;on or after&quot;)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận account seed có sign-up timestamp = đúng thời điểm release PROD</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua thêm 1 paid data plan</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra hành vi rollover + extend Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Account này được xử lý theo <strong>AC1</strong> (New user): không rollover, không extend theo cơ chế cũ — vì mốc thật là &quot;sign up sau/tại thời điểm release PROD&quot;, không phải &quot;20 Jul 2026&quot; như câu chữ AC gốc</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Nếu BE implement sai dấu so sánh (<code>&gt;</code> thay vì <code>&gt;=</code>), account boundary này sẽ rơi nhầm sang AC3 — cần verify kỹ.</p>
+<hr>
+<h3>TC-EP-NXL-013 | User có plan Paused khi job chạy → bị job bỏ qua hoàn toàn</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC4</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account No-Expiry (AC1 hoặc AC2) có 1 plan đang ở trạng thái Paused, Singtel Expiry Date còn ≤32 ngày; cần xác nhận với BE cơ chế đánh dấu &quot;paused&quot; trước khi seed data</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận plan đang ở trạng thái Paused và Singtel Expiry Date còn ≤32 ngày</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Trigger/chờ job chạy đầu tháng</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra lại Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Job <strong>bỏ qua</strong> user này hoàn toàn, Singtel Expiry Date của plan Paused giữ nguyên, không bị extend</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-014 | User có 1 plan Paused + 1 plan Active → verify job skip TOÀN BỘ user</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC4</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account có ≥2 plan: 1 Paused, 1 Active, cả 2 đều còn hạn ≤32 ngày</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận trạng thái từng plan trước khi job chạy</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Trigger/chờ job chạy</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra lại Singtel Expiry Date của CẢ 2 plan</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li><strong>Đã confirm với Dev:</strong> job skip <strong>toàn bộ plan của user</strong>, không chỉ riêng plan Paused. Plan Active của user này <strong>KHÔNG được extend</strong> trong lần quét đó, kể cả khi hạn còn ≤32 ngày và bản thân plan Active không có gì bất thường</li>
+<li>Nếu thực tế BE chỉ skip riêng plan Paused (plan Active vẫn được extend) → là bug, cần báo ngay vì sai với answer đã confirm</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Đã confirm với Dev ngày 06/08/2026 — xem bảng &quot;Cập nhật sau khi confirm với Dev&quot; mục 6 ở đầu file.</p>
+<hr>
+<h3>TC-EP-NXL-015 | Plan Paused được resume trước khi job chạy tháng sau</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Negative</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC4</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Plan đang Paused, sau đó được resume (chuyển lại Active) trước thời điểm job chạy đầu tháng kế tiếp</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Resume plan đang Paused về Active</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Trigger/chờ job chạy đầu tháng</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Vì plan đã Active tại thời điểm job chạy (không còn Paused), job xử lý user này bình thường — extend nếu hạn còn ≤32 ngày</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-016 | API purchase trả đúng field/flag rollover theo từng nhóm</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1, AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Có DevTools/Postman sẵn sàng, có account AC1 và AC2</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Mở DevTools Network hoặc Postman</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Thực hiện mua plan cho account AC1, bắt response API <code>add-data-plan</code></td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Lặp lại tương tự cho account AC2</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>So sánh field liên quan rollover/extend trong 2 response</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>HTTP 200, <code>isSuccess: true</code> cho cả 2</li>
+<li>Field rollover (nếu có, VD: <code>isRolloverApplied</code>) = <code>false</code> cho cả AC1 và AC2</li>
+<li>Field liên quan Singtel Expiry Date phản ánh đúng: AC1 không đổi, AC2 +5 năm</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Tên field thực tế cần đối chiếu lại với response thật, ticket không liệt kê tên field cụ thể.</p>
+<hr>
+<h3>TC-EP-NXL-017 | API data-plan/details trả đúng Internal + Singtel Expiry theo từng nhóm</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1, AC2, AC3</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Có đủ 3 account đại diện AC1, AC2, AC3</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Gọi API <code>data-plan/details/{id}</code> cho từng account</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>So sánh field Internal Expiry Date / Singtel Expiry Date / flag No-Expiry giữa 3 account</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>AC1 &amp; AC2: field No-Expiry = true, không có Internal Expiry Date áp dụng theo nghĩa cũ (hoặc trả null tùy thiết kế BE — cần đối chiếu thực tế)</li>
+<li>AC3: đầy đủ cả Internal Expiry Date và Singtel Expiry Date, No-Expiry = false</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h3>TC-EP-NXL-018 | <em>(Cần confirm BA/Dev)</em> Field <code>isNoExpiry</code> dùng chung cho AC1/AC2 hay tách riêng logic theo ngày sign up</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC1, AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Không test được trực tiếp qua UI — cần xác nhận thiết kế với BA/Dev trước</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Hỏi BA/Dev: AC1 (New user) có được set flag <code>isNoExpiry = true</code> giống AC2 không, hay hệ thống dùng riêng field ngày sign up (so với timestamp release PROD) để tách nhánh logic độc lập với flag No-Expiry?</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sau khi có câu trả lời, verify qua API tương ứng</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Làm rõ được cơ chế phân nhánh thực tế, tránh việc viết/verify sai test case cho AC1 vs AC2 do hiểu nhầm field</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Câu hỏi cần gửi cho BA/Dev trước khi bắt đầu chạy test suite này.</p>
+<hr>
+<h3>TC-EP-NXL-019 | Phân biệt &quot;không Internal Expiry Date + No-Expiry&quot; vs &quot;không Internal Expiry Date + KHÔNG No-Expiry&quot;</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path <em>(đã đánh giá lại — xem &quot;Note&quot; bên dưới)</em></td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td><strong>P1 — nâng mức ưu tiên nhận thức, không chỉ vì AC yêu cầu mà vì tần suất thực tế rất cao</strong></td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC3</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC3 (chưa No-Expiry) có 1 data plan <strong>mới mua, chưa từng dùng</strong> (nên hệ thống có thể chưa tính được Internal Expiry Date theo logic EP-5906 — do chưa đủ điều kiện &quot;không dùng trong 2 năm&quot;)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Mua 1 plan mới cho account AC3, KHÔNG sử dụng data</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Gọi API <code>data-plan/details</code> ngay sau khi mua, kiểm tra field Internal Expiry Date và flag No-Expiry</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>So sánh với 1 account AC1/AC2 cũng không có Internal Expiry Date nhưng đã mark No-Expiry</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Plan mới mua của account AC3 có thể <strong>chưa có giá trị Internal Expiry Date</strong> (vì chưa đủ điều kiện tính toán) nhưng <strong>flag No-Expiry PHẢI là false</strong> — hệ thống không được tự suy luận &quot;không có Internal Expiry Date&quot; thành &quot;No-Expiry&quot;</li>
+<li>Đây là 2 trạng thái khác nhau: (a) không Internal Expiry Date + No-Expiry=true (đúng cho AC1/AC2) vs (b) không Internal Expiry Date + No-Expiry=false (đúng cho plan mới của AC3) — hệ thống phải phân biệt được, không dùng &quot;thiếu Internal Expiry Date&quot; làm điều kiện suy ra No-Expiry</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Điểm này do Dev chủ động lưu ý khi confirm ticket. <strong>Đánh giá lại tần suất thực tế:</strong> đây KHÔNG phải case hiếm — &quot;chưa có Internal Expiry Date&quot; là trạng thái mặc định của MỌI plan AC3 mới mua, ngay tại thời điểm chưa dùng data. Nếu BE implement sai (dùng NULL-check thay vì field flag riêng để suy ra No-Expiry), lỗi sẽ lộ ra ngay ở diện rộng, không phải case hiếm gặp — nên test case này nên được coi như sanity check bắt buộc, không phải edge case phụ.</p>
+<hr>
+<h3>TC-EP-NXL-020 | Race condition: purchase-extend +5 năm và job-extend +5 năm xảy ra cùng lúc cho AC2</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC2 có Singtel Expiry Date còn ≤32 ngày (dùng chung setup với TC-EP-NXL-009 — cần BE backdate)</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận Singtel Expiry Date của account còn ≤32 ngày</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua thêm 1 paid data plan mới <strong>ngay trước hoặc trong lúc</strong> scheduled job đầu tháng đang chạy (phối hợp BE để căn thời điểm trigger job trùng lúc test mua)</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sau khi cả 2 sự kiện xảy ra, kiểm tra lại Singtel Expiry Date</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Singtel Expiry Date chỉ được extend <strong>đúng 1 lần</strong> theo logic dự kiến (không bị cộng dồn thành +10 năm do cả purchase-extend và job-extend cùng áp dụng độc lập lên cùng 1 record) — <strong>cần confirm với BE cơ chế chống double-processing</strong> (idempotency) nếu 2 luồng này chạy gần nhau</li>
+<li>Nếu hệ thống KHÔNG có cơ chế chống trùng, đây là bug thực tế cần báo — vì hành vi khách hàng &quot;sắp hết hạn thì mua thêm&quot; là tình huống thường gặp, không phải case hiếm</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Test case bổ sung sau khi đánh giá lại tần suất thực tế — ban đầu chỉ ghi nhận trong checklist &quot;giới hạn cộng dồn extend&quot; (câu hỏi #14) nhưng thực chất đây là hành vi khách hàng điển hình, nên tách thành test case riêng có mức priority P1.</p>
+<hr>
+<h3>TC-EP-NXL-021 | AC3→AC2 convert: các lot/plan CŨ có tự động chuyển No-Expiry ngay không?</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC3 → AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC3 có <strong>≥2 data plan cũ</strong> (trước khi convert), chưa No-Expiry, chưa mua gì mới</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Ghi nhận Internal Expiry Date/Singtel Expiry Date của TẤT CẢ lot cũ trước khi mua</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua 1 paid data plan mới (kích hoạt convert)</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra lại TẤT CẢ lot cũ (không chỉ lot vừa mua)</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Cần xác nhận với BA/Dev: TẤT CẢ lot cũ có được convert sang No-Expiry ngay lúc này không (giống mechanic gốc ở EP-5745 — mua plan mới thì mọi lot cũ paid+free convert ngay), hay chỉ account-level flag <code>isNoExpiry</code> đổi còn lot cũ vẫn giữ nguyên Internal/Singtel Expiry Date cũ cho tới khi hết hạn tự nhiên</li>
+<li>Ghi nhận hành vi thực tế — đây là ambiguity chưa có câu trả lời chính thức từ AC</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Cần confirm với BA/Dev trước — nếu không confirm được, chạy test và báo cáo hành vi thực tế quan sát được để BA/Dev xác nhận đây có phải hành vi mong đợi hay không.</p>
+<hr>
+<h3>TC-EP-NXL-022 | AC3→AC2 convert: lượt mua kích hoạt có được extend +5 năm ngay không?</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC3 → AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC3, chưa mua gì mới, có sẵn ít nhất 1 lot cũ để quan sát Singtel Expiry Date</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Ghi nhận Singtel Expiry Date của lot cũ trước khi mua</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua 1 paid data plan mới (lượt mua kích hoạt convert AC3→AC2)</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra Singtel Expiry Date của lot cũ VÀ plan vừa mua ngay sau đó</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Cần xác nhận: lượt mua <strong>kích hoạt</strong> convert có được tính là &quot;purchases an additional paid data plan&quot; theo AC2 (→ được extend +5 năm ngay), hay AC2 chỉ áp dụng +5 năm từ lượt mua <strong>kế tiếp</strong> trở đi (vì đây là lượt đầu tiên, chưa chắc tính là &quot;additional&quot;)</li>
+<li>Ghi nhận rõ hành vi thực tế: có/không có +5 năm ngay lượt này</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Ambiguity chưa có câu trả lời chính thức — nên hỏi BA/Dev trước khi kết luận PASS/FAIL, vì cả 2 hướng đều có thể là &quot;đúng&quot; tùy theo intent thật của BA.</p>
+<hr>
+<h3>TC-EP-NXL-023 | AC3 user nhận FREE data (không mua) → có trigger convert không?</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Edge</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC3 → AC2</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account AC3, chưa mua gì mới; cần phối hợp BE/CS để cấp free data cho account này (VD referral bonus, promo tặng data) mà KHÔNG qua purchase</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận account đang ở AC3 (chưa No-Expiry, chưa mua gì)</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cấp 1 lượt free data cho account (không phải mua paid plan)</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra flag No-Expiry sau khi nhận free data</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>AC3 viết &quot;<strong>added new data plan</strong>&quot; — không có chữ &quot;paid&quot; như AC1/AC2. Cần xác nhận: free data có kích hoạt convert AC3→AC2 không?</li>
+<li>Nếu free data KHÔNG trigger convert (chỉ paid mới tính) → flag No-Expiry vẫn <code>false</code> sau bước 2</li>
+<li>Nếu free data CÓ trigger convert → flag No-Expiry chuyển <code>true</code> ngay sau bước 2</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong> Cần BA/Dev xác nhận trước khi test — nếu không có cách cấp free data thủ công trên STG, đánh dấu BLOCKED và hỏi BE cơ chế phù hợp.</p>
+<hr>
+<h3>TC-EP-NXL-024 | Sau convert, mua thêm plan lần 2 → verify hành vi AC2 áp dụng đúng và vĩnh viễn</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Loại</strong></td>
+<td>Happy path</td>
+</tr>
+<tr>
+<td><strong>Priority</strong></td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>AC</strong></td>
+<td>AC2 (sau khi đã convert từ AC3)</td>
+</tr>
+</tbody></table>
+<p><strong>Precondition:</strong> Account đã convert từ AC3→AC2 (theo TC-010), tức đã mua ít nhất 1 plan mới và No-Expiry = true</p>
+<p><strong>Test Steps:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Test Data</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Xác nhận flag No-Expiry = true (account đã convert)</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mua thêm 1 paid data plan lần 2</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Kiểm tra rollover + Singtel Expiry Date sau lượt mua lần 2</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Expected Result:</strong></p>
+<ul>
+<li>Lượt mua lần 2 áp dụng đúng 100% rule AC2 chuẩn: không rollover, Singtel Expiry Date extend +5 năm (không còn ambiguity như lượt convert đầu tiên ở TC-022, vì lần này chắc chắn là &quot;additional&quot;)</li>
+<li>Account không quay lại AC3 dù trong tương lai có ngừng mua 1 thời gian — convert là vĩnh viễn</li>
+</ul>
+<p><strong>Actual Result:</strong> <em>(điền sau khi test)</em></p>
+<p><strong>Status:</strong> <code>[ ] PASS  [ ] FAIL  [ ] BLOCKED  [ ] SKIP</code></p>
+<p><strong>Note / Evidence:</strong></p>
+<hr>
+<h2>Kết luận</h2>
+<table>
+<thead>
+<tr>
+<th>Tổng TC</th>
+<th>PASS</th>
+<th>FAIL</th>
+<th>BLOCKED</th>
+<th>SKIP</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>24</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Chưa thực thi — ticket đã chuyển trạng thái <strong>QC</strong> (06/08/2026), sẵn sàng test thật trên Staging. Đã cập nhật 2 lần: (1) theo các điểm Dev confirm miệng ngày 06/08/2026, (2) theo bản BA update AC chính thức trên Jira cùng ngày (comment #26540) — thay đổi lớn nhất là <strong>AC3 không còn ổn định, convert ngay thành AC2 khi user mua bất kỳ plan mới</strong> (xem TC-010/011/021-024).</p>
+</blockquote>
+<p><strong>Thứ tự ưu tiên chuẩn bị test theo tần suất thực tế:</strong> làm nhóm 🟢 trước (test được ngay, không tốn công chuẩn bị — <strong>đặc biệt ưu tiên TC-010/021/022/024 vì đây là hành vi mặc định mới của toàn bộ existing user</strong>) → sau đó mới đầu tư công backdate/seed cho nhóm 🟡 (004, 005, 009, 012, 013, 015, 020, 023) → nhóm 🔴 (003, 014) để cuối vì tổ hợp hiếm, ít ảnh hưởng số đông user thật.</p>
+<p><strong>Cần chuẩn bị trước khi test:</strong></p>
+<ul>
+<li>Xác nhận với BA/Dev các điểm <strong>còn CHƯA đóng</strong>: field <code>isNoExpiry</code> dùng chung hay tách riêng cho AC1/AC2 (TC-018); cơ chế đánh dấu &quot;paused&quot; ở mức data plan; Transfer Data xuyên nhóm (mục 4 trong bảng cập nhật)</li>
+<li>🆕 Xác nhận 3 ambiguity mới từ bản AC3 update: free data có trigger convert không (TC-023); lượt mua kích hoạt convert có +5 năm ngay không (TC-022); lot cũ có tự convert theo không (TC-021)</li>
+<li>Chọn/chuẩn bị account test: AC1 tạo mới bình thường (sau 30/07/2026); AC2/AC3 <strong>có thể tái dùng account cũ có sẵn trên STG</strong> (kể cả account test của EP-5745) vì mốc release chỉ mới cách đây 7 ngày — không cần seed mới như đánh giá ban đầu. Riêng cần chọn kỹ: account cho TC-011 phải <strong>chưa từng mua gì</strong> (để giữ đúng AC3), khác với account cho TC-010 (sẽ bị convert sau khi test — không tái dùng lại cho TC-011 được nữa). Riêng TC-NXL-012 (boundary) vẫn cần BE/DevOps cung cấp đúng timestamp release PROD</li>
+<li>Xác nhận với BE cách trigger scheduled job đầu tháng thủ công trên STG (không có API public trong WBS) — nếu không hỗ trợ được, các TC-NXL-004, 005, 009, 013, 014, 015, 020 cần đánh dấu BLOCKED và chờ tới đầu tháng thực tế</li>
+<li>Xác nhận cơ chế set trạng thái &quot;Paused&quot; cho 1 data plan cụ thể (không tìm thấy endpoint tương ứng trong WBS, chỉ có <code>suspend-esim</code> ở mức eSIM)</li>
+</ul>
+
+<div class="footer">Eskimo Portals — QC Documentation · Xuất từ TC_EP-5887_No_Expiry_Logic.md · 2026-08-06</div>
+</body>
+</html>
